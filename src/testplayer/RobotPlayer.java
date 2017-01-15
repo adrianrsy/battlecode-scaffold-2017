@@ -3,7 +3,11 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-
+    //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
+    static int PHASE_NUMBER_CHANNEL = 0;
+    
+    //Except for the channel that contains the round number
+    static int ROUND_NUMBER_CHANNEL = 1000;
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -35,35 +39,61 @@ public strictfp class RobotPlayer {
 
     static void runArchon() throws GameActionException {
         System.out.println("I'm an archon!");
+        int archonNum;
+        int phaseNum = 1;
+        //If first channel has not yet been assigned, this must be the first archon
+        if(rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 1) != 1){
+            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 1, 1);
+            archonNum = 1;
+        }
+        //If second channel has not yet been assigned, this must be the second archon
+        else if (rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 2) != 1){
+            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 2, 1);
+            archonNum =2;
+        }
+        //Otherwise, it is the third archon
+        else{
+            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 3, 1);
+            archonNum = 3;
+        }
+        int numRoundsRemaining;
+        if(archonNum == 1){
+            numRoundsRemaining = rc.getRoundNum();
+            rc.broadcast(ROUND_NUMBER_CHANNEL, numRoundsRemaining);
+        }
+        else{
+            numRoundsRemaining = rc.readBroadcast(ROUND_NUMBER_CHANNEL);
+        }
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-
-                // Generate a random direction
-                Direction dir = randomDirection();
-
-                // Randomly attempt to build a gardener in this direction
-                if (rc.canHireGardener(dir) && Math.random() < .01) {
-                    rc.hireGardener(dir);
+                int currentPhaseNum = rc.readBroadcast(PHASE_NUMBER_CHANNEL);
+                switch(currentPhaseNum){
+                    case 1:
+                        runArchonPhase1();
                 }
-
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Broadcast archon's location for other robots on the team to know
-                MapLocation myLocation = rc.getLocation();
-                rc.broadcast(0,(int)myLocation.x);
-                rc.broadcast(1,(int)myLocation.y);
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
+                
+                numRoundsRemaining -=1;
+                if(numRoundsRemaining == 0){
+                    float numBullets = rc.getTeamBullets();
+                    int numPoints = (int) ((numBullets)/GameConstants.BULLET_EXCHANGE_RATE);
+                    rc.donate(numPoints);
+                }
             } catch (Exception e) {
                 System.out.println("Archon Exception");
                 e.printStackTrace();
+            }
+        }
+    }
+    
+    static void runArchonPhase1() throws GameActionException{
+        while (true) {
+            MapLocation loc = rc.getLocation();
+            if(loc.distanceTo(new MapLocation(0,0)) < 30){
+                
             }
         }
     }
