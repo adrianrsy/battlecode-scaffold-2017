@@ -3,6 +3,9 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
+    private static final int SOLDIER_HP = 50;
+    private static final double DYING_SOLDIER_HP_THRESHOLD = 0.3*SOLDIER_HP;
+    private static final int MAX_ARCHONS = 3;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -106,15 +109,36 @@ public strictfp class RobotPlayer {
     }
 
     static void runSoldier() throws GameActionException {
-        System.out.println("I'm an soldier!");
-        Team enemy = rc.getTeam().opponent();
+    	System.out.println("I'm a soldier!");
+        Team ownTeam = rc.getTeam();;
+        Team enemy = ownTeam.opponent();
+        int currentTargetId = 0;
+        int archonController = getNearestArchon();
+        int currentPhase;
+        boolean hasSentDyingBroadcast = false;
+
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                MapLocation myLocation = rc.getLocation();
+            	currentPhase = rc.readBroadcast(archonController);
+            	switch (currentPhase){
+            	case 1:
+            		break;
+            	case 2:
+            		break;
+            	case 3:
+            		break;
+            	case 4:
+            		break;
+            	case 5:
+            		break;
+            	default:
+            		break;
+            	}
+                MapLocation ownLocation = rc.getLocation();
 
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
@@ -123,12 +147,32 @@ public strictfp class RobotPlayer {
                 if (robots.length > 0) {
                     // And we have enough bullets, and haven't attacked yet this turn...
                     if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                    	boolean hasShot = false;
+//                    	find current target in nearby robots
+                    	for (RobotInfo robot : robots) {
+                    		if (currentTargetId == robot.ID) {
+                                // ...Then fire a bullet in the direction of the target
+                                rc.fireSingleShot(rc.getLocation().directionTo(robot.location));
+                                hasShot = true;
+                                break;
+                    		}
+                    	}
+                    	if (!hasShot) {
+                    		rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                    	}
                     }
+                }
+                
+//              send a broadcast to the archon controlling it if it's dying so that it gets replaced
+                if (!hasSentDyingBroadcast && isDying(RobotType.SOLDIER, rc.getHealth())) {
+                	int channel = archonController + MAX_ARCHONS;
+                	int previousCount = rc.readBroadcast(channel);
+                	rc.broadcast(channel, previousCount+1);
+                	hasSentDyingBroadcast = true;
                 }
 
                 // Move randomly
+//                TODO: decide where to move. away from bullet/s?
                 tryMove(randomDirection());
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
@@ -182,6 +226,34 @@ public strictfp class RobotPlayer {
                 e.printStackTrace();
             }
         }
+    }
+    
+    static int getNearestArchon() {
+//    	FIXME
+    	return 1;
+    }
+    
+    static RobotInfo findNearestRobot(RobotInfo[] robotList, MapLocation location) {
+    	float smallestDistance = Float.MAX_VALUE;
+    	RobotInfo nearestRobot = null;
+    	for (RobotInfo robotInfo : robotList) {
+    		float distance = robotInfo.location.distanceTo(location);
+			if (distance < smallestDistance) {
+				smallestDistance = distance;
+				nearestRobot = robotInfo;
+			}
+    	}
+    	return nearestRobot;
+    }
+
+    
+    static boolean isDying(RobotType robotType, float robotHp) {
+    	switch (robotType) {
+    	case SOLDIER:
+    		return robotHp < DYING_SOLDIER_HP_THRESHOLD;
+    	default:
+    		return false;
+    	}
     }
 
     /**
