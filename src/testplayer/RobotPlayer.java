@@ -4,7 +4,9 @@ import battlecode.common.*;
 public strictfp class RobotPlayer {
     static RobotController rc;
     private static final int SOLDIER_HP = 50;
+    private static final int LUMBERJACK_HP = 50;
     private static final double DYING_SOLDIER_HP_THRESHOLD = 0.3*SOLDIER_HP;
+    private static final double DYING_LUMBERJACK_HP_THRESHOLD = 0.3*LUMBERJACK_HP;
     private static final int MAX_ARCHONS = 3;
 
     /**
@@ -110,7 +112,7 @@ public strictfp class RobotPlayer {
 
     static void runSoldier() throws GameActionException {
     	System.out.println("I'm a soldier!");
-        Team ownTeam = rc.getTeam();;
+        Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();
         int currentTargetId = 0;
         int archonController = getNearestArchon();
@@ -158,7 +160,9 @@ public strictfp class RobotPlayer {
                     		}
                     	}
                     	if (!hasShot) {
-                    		rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
+                    		RobotInfo nearestRobot = findNearestRobot(robots, ownLocation);
+                    		currentTargetId = nearestRobot.ID;
+                    		rc.fireSingleShot(ownLocation.directionTo(nearestRobot.location));
                     	}
                     }
                 }
@@ -187,13 +191,55 @@ public strictfp class RobotPlayer {
 
     static void runLumberjack() throws GameActionException {
         System.out.println("I'm a lumberjack!");
-        Team enemy = rc.getTeam().opponent();
+        Team ownTeam = rc.getTeam();
+        Team enemy = ownTeam.opponent();
+        int currentTargetId = 0;
+        int archonController = getNearestArchon();
+        int currentPhase;
+        boolean hasSentDyingBroadcast = false;
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+            	currentPhase = rc.readBroadcast(archonController);
+            	switch (currentPhase){
+            	case 1:
+//            		TODO:
+//            		get direction from archon movement
+//            		check for trees in the way and chop them
+//            		head that direction
+            		TreeInfo[] trees = rc.senseNearbyTrees();
+            		boolean hasShaken = false;
+            		boolean hasChopped = false;
+            		for (TreeInfo tree : trees) {
+            			int treeId = tree.ID;
+            			if (!hasShaken && rc.canShake(treeId)) {
+            				rc.shake(treeId);
+            				hasShaken = true;
+            			}
+//            			FIXME: only chop when it is in the way?
+            			if (!hasChopped && tree.team != ownTeam && rc.canChop(treeId)) {
+            				rc.chop(treeId);
+            				hasChopped = true;
+            			}
+            			if (hasChopped && hasShaken) {
+            				break;
+            			}
+            		}
+            		break;
+            	case 2:
+            		break;
+            	case 3:
+            		break;
+            	case 4:
+            		break;
+            	case 5:
+            		break;
+            	default:
+            		break;
+            	}
 
                 // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
                 RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
@@ -217,6 +263,15 @@ public strictfp class RobotPlayer {
                         tryMove(randomDirection());
                     }
                 }
+                
+//              send a broadcast to the archon controlling it if it's dying so that it gets replaced
+                if (!hasSentDyingBroadcast && isDying(RobotType.LUMBERJACK, rc.getHealth())) {
+                	int channel = archonController + MAX_ARCHONS;
+                	int previousCount = rc.readBroadcast(channel);
+                	rc.broadcast(channel, previousCount+1);
+                	hasSentDyingBroadcast = true;
+                }
+
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -251,6 +306,8 @@ public strictfp class RobotPlayer {
     	switch (robotType) {
     	case SOLDIER:
     		return robotHp < DYING_SOLDIER_HP_THRESHOLD;
+    	case LUMBERJACK:
+    		return robotHp < DYING_LUMBERJACK_HP_THRESHOLD;
     	default:
     		return false;
     	}
