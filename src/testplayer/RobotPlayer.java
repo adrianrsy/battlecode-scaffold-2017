@@ -1,5 +1,6 @@
 package testplayer;
 import battlecode.common.*;
+import testplayer.Archon;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
@@ -8,6 +9,11 @@ public strictfp class RobotPlayer {
     
     //Except for the channel that contains the round number
     static int ROUND_NUMBER_CHANNEL = 1000;
+    
+    
+    //Origin
+    static MapLocation ORIGIN = new MapLocation(0,0);
+    
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -23,7 +29,7 @@ public strictfp class RobotPlayer {
         // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
-                runArchon();
+                Archon.runArchon();
                 break;
             case GARDENER:
                 runGardener();
@@ -37,63 +43,49 @@ public strictfp class RobotPlayer {
         }
 	}
 
-    static void runArchon() throws GameActionException {
-        System.out.println("I'm an archon!");
-        int archonNum;
-        int phaseNum = 1;
-        //If first channel has not yet been assigned, this must be the first archon
-        if(rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 1) != 1){
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 1, 1);
-            archonNum = 1;
-        }
-        //If second channel has not yet been assigned, this must be the second archon
-        else if (rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 2) != 1){
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 2, 1);
-            archonNum =2;
-        }
-        //Otherwise, it is the third archon
-        else{
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 3, 1);
-            archonNum = 3;
-        }
-        int numRoundsRemaining;
-        if(archonNum == 1){
-            numRoundsRemaining = rc.getRoundNum();
-            rc.broadcast(ROUND_NUMBER_CHANNEL, numRoundsRemaining);
-        }
-        else{
-            numRoundsRemaining = rc.readBroadcast(ROUND_NUMBER_CHANNEL);
-        }
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                int currentPhaseNum = rc.readBroadcast(PHASE_NUMBER_CHANNEL);
-                switch(currentPhaseNum){
-                    case 1:
-                        runArchonPhase1();
-                }
-                
-                numRoundsRemaining -=1;
-                if(numRoundsRemaining == 0){
-                    float numBullets = rc.getTeamBullets();
-                    int numPoints = (int) ((numBullets)/GameConstants.BULLET_EXCHANGE_RATE);
-                    rc.donate(numPoints);
-                }
-            } catch (Exception e) {
-                System.out.println("Archon Exception");
-                e.printStackTrace();
-            }
-        }
-    }
     
-    static void runArchonPhase1() throws GameActionException{
-        while (true) {
+    
+    static void runArchonPhase1(int archonNum) throws GameActionException{
+        //target1 is the initial target to aim for
+        //target1.1 is the initial direction to aim for if initial target location is unknown
+        //target2 is the direction it will go after reaching target1
+        MapLocation target1 = rc.getLocation();
+        Direction target11 = Direction.getSouth(); //Arbitrary default value
+        Direction target2 = Direction.getWest();//Arbitrary default value
+        boolean hasTarget = true;
+        
+        if(archonNum ==1){
             MapLocation loc = rc.getLocation();
-            if(loc.distanceTo(new MapLocation(0,0)) < 30){
+            if(loc.distanceTo(ORIGIN) < 30){
+                target1 = ORIGIN;
+                target2 = Direction.getNorth();
+            }
+            else if(loc.x < 21){
+                target1 = new MapLocation(0,loc.y);
+                target2 = Direction.getEast();
+            }
+            else if(loc.y < 21){
+                target1 = new MapLocation(loc.x,0);
+                target2 = Direction.getNorth();
+            }
+            else{
+                hasTarget = false;
+                if(loc.x > loc.y){
+                    target11 = Direction.getEast();
+                    target2 = Direction.getNorth();
+                }
+                else{
+                    target11 = Direction.getNorth();
+                    target2 = Direction.getEast();
+                }
+            }
+            while (!hasTarget){
+                tryMove(target11);
                 
+            }
+            while (hasTarget) {
+                loc = rc.getLocation();
+                tryMove(loc.directionTo(target1));
             }
         }
     }
