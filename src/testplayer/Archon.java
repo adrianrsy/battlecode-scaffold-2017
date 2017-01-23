@@ -2,14 +2,18 @@ package testplayer;
 import battlecode.common.*;
 import testplayer.RobotPlayer;
 
-//Goal during phase 1 is to move towards a corner and esstablish a base there.
-
-
-
-
-
 public strictfp class Archon {
     static RobotController rc;
+    
+    //Phase turn limits
+    static int PHASE_1_TURN_LIMIT = 200;
+    
+    //Offset when converting floats to integers and vice versa
+    static int CONVERSION_OFFSET = 100000;
+    
+    //Limits for active gardener production, after some number of turn gardeners may stay behind and 
+    //become inactive, a.k.a plant trees and stall
+    static int PHASE_1_ACTIVE_GARDENER_LIMIT = 6;
     
     //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
     static int PHASE_NUMBER_CHANNEL = 0;
@@ -17,7 +21,8 @@ public strictfp class Archon {
     static int ARCHON_LOCATION_X_CHANNEL = 2;
     static int ARCHON_LOCATION_Y_CHANNEL = 3;
     static int LIVING_GARDENERS_CHANNEL = 4;
-    static int IMMEDIATE_TARGET_CHANNEL = 5;
+    static int IMMEDIATE_TARGET_X_CHANNEL = 5;
+    static int IMMEDIATE_TARGET_Y_CHANNEL = 6;
     
     //Except for the channel that contains the round number
     static int ROUND_NUMBER_CHANNEL = 1000;
@@ -32,8 +37,41 @@ public strictfp class Archon {
     static Direction SOUTH_EAST = new Direction((float) ((SOUTH.radians + EAST.radians)/2.0));
     static Direction SOUTH_WEST = new Direction((float) ((SOUTH.radians + WEST.radians)/2.0));
     
+    /**
+     * For Phase 1<br>
+     * In order, each turn an archon will attempt to move towards a corner, signal its movement direction and location, <br>
+     * signal a target if there is an obstacle (neutral trees/enemy robots) preventing it from moving, <br>
+     * build gardeners and increment the number of gardeners behind it if possible until a limit is reached, <br> 
+     * then sense broadcasting enemies and attempt to predict and broadcast enemy archon location. (not implemented)<br>
+     *<br>
+     *
+     * Channels:<br>
+     * <ul>
+     * <li>1 - 3 -> Phase number
+     * <li>4 - 6 -> Archon movement direction
+     * <li>7 - 9 -> Archon location x
+     * <li>10-12 -> Archon location y
+     * <li>13-15 -> Living Gardener channel
+     * <li>16-18 -> Immediate Target x
+     * <li>19-21 -> Immediate Target y
+     * <li>1000  -> round number
+     * </ul>
+     *<br>
+     *
+     * Movement:<br>
+     * <ul>
+     * <li>If there is only one archon, it will attempt to move southwest.
+     * <li>If there are two archons, the first will move southwest, the second will move southeast.
+     * <li>If there are three archons, first will move southwest, second will move southeast, third will head northwest.
+     * </ul>
+     *<br>
+     *
+     * Signal movement direction:<br>
+     * Each archon will signal the direction it moved in radians.<br>
+     * Spawned units will follow this direction and will be spawned approximately opposite this direction<br>
+     */
     
-    static void runArchon() throws GameActionException {
+    static void runArchonPhase1() throws GameActionException{
         System.out.println("I'm an archon!");
         int archonNum;
         int phaseNum = 1;
@@ -56,70 +94,13 @@ public strictfp class Archon {
         
         int numRoundsRemaining;
         if(archonNum == 1){
-            numRoundsRemaining = rc.getRoundNum();
+            numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
             rc.broadcast(ROUND_NUMBER_CHANNEL, numRoundsRemaining);
         }
         else{
             numRoundsRemaining = rc.readBroadcast(ROUND_NUMBER_CHANNEL);
         }
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                int currentPhaseNum = rc.readBroadcast(PHASE_NUMBER_CHANNEL);
-                switch(currentPhaseNum){
-                    case 1:
-                        runArchonPhase1(archonNum);
-                }
-                numRoundsRemaining -=1;
-//                if(numRoundsRemaining == 0){
-//                    float numBullets = rc.getTeamBullets();
-//                    int numPoints = (int) ((numBullets)/GameConstants.BULLET_EXCHANGE_RATE);
-//                    rc.donate(numPoints);
-//                }
-            } catch (Exception e) {
-                System.out.println("Archon Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-    
-    /**
-     * For Phase 1<br>
-     * In order, each turn an archon will attempt to move towards a corner, signal its movement direction and location, <br>
-     * signal a target if there is an obstacle (neutral trees/enemy robots) preventing it from moving, <br>
-     * build gardeners and increment the number of gardeners behind it if possible until a limit is reached, <br> 
-     * then sense broadcasting enemies and attempt to predict and broadcast enemy archon location.<br>
-     *<br>
-     *
-     * Channels:<br>
-     * <ul>
-     * <li>1 - 3 -> Phase number
-     * <li>4 - 6 -> Archon movement direction
-     * <li>7 - 9 -> Archon location x
-     * <li>10-12 -> Archon location y
-     * <li>13-15 -> Living Gardener channel
-     * <li>16-18 -> Immediate Target channel
-     * <li>1000  -> round number
-     * </ul>
-     *<br>
-     *
-     * Movement:<br>
-     * <ul>
-     * <li>If there is only one archon, it will attempt to move southwest.
-     * <li>If there are two archons, the first will move southwest, the second will move southeast.
-     * <li>If there are three archons, first will move southwest, second will move southeast, third will head northwest.
-     * </ul>
-     *<br>
-     *
-     * Signal movement direction:<br>
-     * Each archon will signal the direction it moved in radians.<br>
-     * Spawned units will follow this direction and will be spawned approximately opposite this direction<br>
-     */
-    
-    static void runArchonPhase1(int archonNum) throws GameActionException{
+        
         Direction headedTo;
         switch(archonNum){
         case 1:
@@ -136,28 +117,96 @@ public strictfp class Archon {
             headedTo = SOUTH_WEST;
             break;
         }
-        
+        int turnCount = 0;
+        while(true){
+            try{
+                rc.broadcast(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*CONVERSION_OFFSET));
+                boolean hasMoved = RobotPlayer.moveTowards(headedTo);
+                MapLocation loc = rc.getLocation();
+                rc.broadcast(ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*CONVERSION_OFFSET));
+                rc.broadcast(ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*CONVERSION_OFFSET));
+                if(!hasMoved){
+                    TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
+                    boolean obstacleIsTree = false;
+                    for(TreeInfo nearbyTree: nearbyTrees){
+                        MapLocation treeLoc = nearbyTree.getLocation();
+                        if(!nearbyTree.getTeam().equals(rc.getTeam()) &&
+                           loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
+                           loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
+                            if(rc.canShake(treeLoc)) rc.shake(treeLoc);
+                            rc.broadcast(IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
+                            rc.broadcast(IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                            obstacleIsTree = true;
+                            break;
+                        }
+                    }
+                    if(!obstacleIsTree){
+                        RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+                        for(RobotInfo nearbyRobot: nearbyRobots){
+                            MapLocation treeLoc = nearbyRobot.getLocation();
+                            if(!nearbyRobot.getTeam().equals(rc.getTeam()) &&
+                               loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
+                               loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
+                                rc.broadcast(IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
+                                rc.broadcast(IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                                break;
+                            }
+                        }
+                    }   
+                }
+                int numActiveGardeners = rc.readBroadcast(LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                if (numActiveGardeners < PHASE_1_ACTIVE_GARDENER_LIMIT){
+                    boolean hasHired = tryHireGardener(headedTo.opposite(), 90, 6);
+                    if(hasHired){
+                        rc.broadcast(LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
+                    }
+                }
+                
+                turnCount+=1;
+                if(turnCount > PHASE_1_TURN_LIMIT){
+                    rc.broadcast(PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
+                    break;
+                }
+            }catch (Exception e) {
+            System.out.println("Archon Exception");
+            e.printStackTrace();
+            } 
+        }
+        runArchonPhase2();
+    }
+    
+    static void runArchonPhase2() throws GameActionException{
+    
+    }
+    
+    static boolean tryHireGardener(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
+        if(rc.getBuildCooldownTurns() > 0 || rc.getTeamBullets() < RobotType.GARDENER.bulletCost){
+            return false;
+        }
+        if(rc.canHireGardener(dir)){
+            rc.hireGardener(dir);
+            return true;
+        }
+        // Now try a bunch of similar angles
+        int currentCheck = 1;
 
-    }
-    
-    /**
-     * Attempts to move towards a certain point while avoiding small obstacles at an angle of at most 60 degrees.
-     * @param loc location it is trying to move towards
-     * @return true if the robot has successfully moved towards the point
-     * @throws GameActionException
-     */
-    static boolean moveTowards(MapLocation loc) throws GameActionException{
-        return RobotPlayer.tryMove(rc.getLocation().directionTo(loc), 60, 4);
-    }
-    
-    /**
-     * Attempts to move towards a certain direction while avoiding small obstacles at an angle of at most 60 degrees.
-     * @param dir
-     * @return true if the robot has successfully moved towards the point
-     * @throws GameActionException
-     */
-    static boolean moveTowards(Direction dir) throws GameActionException{
-        return RobotPlayer.tryMove(dir, 60, 4);
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            if(rc.canHireGardener(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+                rc.hireGardener(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // Try the offset on the right side
+            if(rc.canHireGardener(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+                rc.hireGardener(dir.rotateRightDegrees(degreeOffset*currentCheck));
+                return true;
+            }
+            // No hire performed, try slightly further
+            currentCheck++;
+        }
+
+        // A hire never happened, so return false.
+        return false;
     }
 
 }

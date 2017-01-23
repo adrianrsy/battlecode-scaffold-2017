@@ -29,7 +29,7 @@ public strictfp class RobotPlayer {
         // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
-                Archon.runArchon();
+                Archon.runArchonPhase1();
                 break;
             case GARDENER:
                 runGardener();
@@ -263,6 +263,26 @@ public strictfp class RobotPlayer {
 
         // A move never happened, so return false.
         return false;
+    }
+    
+    /**
+     * Attempts to move towards a certain point while avoiding small obstacles at an angle of at most 60 degrees.
+     * @param loc location it is trying to move towards
+     * @return true if the robot has successfully moved towards the point
+     * @throws GameActionException
+     */
+    static boolean moveTowards(MapLocation loc) throws GameActionException{
+        return tryMove(rc.getLocation().directionTo(loc), 45, 4);
+    }
+    
+    /**
+     * Attempts to move towards a certain direction while avoiding small obstacles at an angle of at most 60 degrees.
+     * @param dir
+     * @return true if the robot has successfully moved towards the point
+     * @throws GameActionException
+     */
+    static boolean moveTowards(Direction dir) throws GameActionException{
+        return tryMove(dir, 45, 4);
     }
 
     /**
