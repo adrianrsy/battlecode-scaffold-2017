@@ -49,10 +49,7 @@ public strictfp class Lumberjack {
         int currentPhase;
         boolean hasSentDyingBroadcast = false;
 
-        // The code you want your robot to perform every round should be in this loop
         while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 currentPhase = rc.readBroadcast(archonController);
                 switch (currentPhase){
@@ -61,7 +58,7 @@ public strictfp class Lumberjack {
 //                  get direction from archon movement
 //                  check for trees in the way and chop them
 //                  head that direction
-                    TreeInfo[] trees = rc.senseNearbyTrees();
+                    TreeInfo[] trees = rc.senseNearbyTrees(1); //GameConstants.INTERACTION_DIST_FROM_EDGE;
                     boolean hasShaken = false;
                     boolean hasChopped = false;
                     for (TreeInfo tree : trees) {
