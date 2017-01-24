@@ -43,31 +43,35 @@ public strictfp class Gardener {
     static void runGardenerPhase1() throws GameActionException{
         System.out.println("I'm a gardener!");
         int turnCount = 0;
-        MapLocation loc = rc.getLocation();
         int archonNum = RobotPlayer.getNearestArchon();
         float headedToRadians = ((float) rc.readBroadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/Archon.CONVERSION_OFFSET;
         Direction headedTo = new Direction(headedToRadians);
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
-            phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
-            if(turnCount%2 == 0){
-                boolean hasMoved = RobotPlayer.moveTowards(headedTo);
-            }
-            double randomVar = Math.random();
-            if(randomVar < 0.4){
-                tryBuild(RobotType.LUMBERJACK,headedTo.opposite());
-            }
-            else if(randomVar < 0.8){
-                tryBuild(RobotType.SCOUT, headedTo.opposite());
-            }
-            else{
-                tryBuild(RobotType.SOLDIER, headedTo.opposite());
-            }
-            turnCount +=1;
-            if(phaseNum != 1) {
-                break;
-            }
-            Clock.yield();
+            try{
+                phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
+                if(turnCount%2 == 0){
+                    RobotPlayer.moveTowards(headedTo);
+                }
+                double randomVar = Math.random();
+                if(randomVar < 0.4){
+                    tryBuild(RobotType.LUMBERJACK,headedTo.opposite());
+                }
+                else if(randomVar < 0.8){
+                    tryBuild(RobotType.SCOUT, headedTo.opposite());
+                }
+                else{
+                    tryBuild(RobotType.SOLDIER, headedTo.opposite());
+                }
+                turnCount +=1;
+                if(phaseNum != 1) {
+                    break;
+                }
+                Clock.yield();
+            }catch (Exception e) {
+                System.out.println("Archon Exception");
+                e.printStackTrace();
+            } 
         }
         if(phaseNum == 2){
             runGardenerPhase2();
@@ -80,19 +84,14 @@ public strictfp class Gardener {
             Clock.yield();
         }
         while(true){
-            tryPlantHexagonal();
-            TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 2.5, rc.getTeam());
-            int minHPTreeID = 0; //arbitrary id number
-            float minHP = 50; //maximal amount of hp
-            for(int i = 0; i<Math.max(6, nearbyTeamTrees.length); i++){
-                if(rc.canWater(nearbyTeamTrees[i].getID()) && nearbyTeamTrees[i].getHealth()<minHP){
-                    minHPTreeID = nearbyTeamTrees[i].getID();
-                    minHP = nearbyTeamTrees[i].getHealth();
-                }
-            }
-            if(rc.canWater(minHPTreeID)) 
-                rc.water(minHPTreeID);
-            Clock.yield();
+            try{
+                tryPlantHexagonal();
+                tryWaterHexagonal();
+                Clock.yield();
+            }catch (Exception e) {
+                System.out.println("Archon Exception");
+                e.printStackTrace();
+            } 
         }
     }
     
@@ -106,6 +105,20 @@ public strictfp class Gardener {
             if(rc.canPlantTree(dir))
                 rc.plantTree(dir);
         }
+    }
+    
+    static void tryWaterHexagonal() throws GameActionException{
+        TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 2.5, rc.getTeam());
+        int minHPTreeID = 0; //arbitrary id number
+        float minHP = GameConstants.BULLET_TREE_MAX_HEALTH; //maximal amount of hp
+        for(int i = 0; i<Math.max(6, nearbyTeamTrees.length); i++){
+            if(rc.canWater(nearbyTeamTrees[i].getID()) && nearbyTeamTrees[i].getHealth()<minHP){
+                minHPTreeID = nearbyTeamTrees[i].getID();
+                minHP = nearbyTeamTrees[i].getHealth();
+            }
+        }
+        if(rc.canWater(minHPTreeID)) 
+            rc.water(minHPTreeID);
     }
     
     static boolean tryBuild(RobotType robotType, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{

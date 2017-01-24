@@ -116,7 +116,7 @@ public strictfp class Lumberjack {
                 }
                 
 //              send a broadcast to the archon controlling it if it's dying so that it gets replaced
-                if (!hasSentDyingBroadcast && RobotPlayer.isDying(RobotType.LUMBERJACK, rc.getHealth())) {
+                if (!hasSentDyingBroadcast && RobotPlayer.isDying()) {
                     int channel = archonController + RobotPlayer.MAX_ARCHONS;
                     int previousCount = rc.readBroadcast(channel);
                     rc.broadcast(channel, previousCount+1);

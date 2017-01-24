@@ -28,7 +28,6 @@ public strictfp class RobotPlayer {
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
     **/
-    @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
         // This is the RobotController object. You use it to perform actions from this robot,
@@ -57,6 +56,11 @@ public strictfp class RobotPlayer {
         }
 	}
     
+    /**
+     * Allows the robot to the archon it is closest to
+     * @return the archon closest to the robot running getNearestArchon
+     * @throws GameActionException
+     */
     static int getNearestArchon() throws GameActionException {
         MapLocation loc = rc.getLocation();
         int archonNum = 1;
@@ -74,6 +78,12 @@ public strictfp class RobotPlayer {
     	return archonNum;
     }
     
+    /**
+     * Find the nearest robot from a list of robots to a certain location
+     * @param robotList list of robot's info
+     * @param location 
+     * @return information about the nearest robot or null if list is empty
+     */
     static RobotInfo findNearestRobot(RobotInfo[] robotList, MapLocation location) {
     	float smallestDistance = Float.MAX_VALUE;
     	RobotInfo nearestRobot = null;
@@ -86,9 +96,14 @@ public strictfp class RobotPlayer {
     	}
     	return nearestRobot;
     }
-
     
-    static boolean isDying(RobotType robotType, float robotHp) {
+    /**
+     * Determines whether or not the robot is nearly dead based on a set threshold
+     * @return true if it is lower than the threshold
+     */
+    static boolean isDying() {
+        RobotType robotType = rc.getType();
+        float robotHp = rc.getHealth();
     	switch (robotType) {
     	case GARDENER:
     	    return robotHp < DYING_GARDENER_HP_THRESHOLD; 
@@ -140,10 +155,8 @@ public strictfp class RobotPlayer {
             rc.move(dir);
             return true;
         }
-
         // Now try a bunch of similar angles
         int currentCheck = 1;
-
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
             if(rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
@@ -158,7 +171,6 @@ public strictfp class RobotPlayer {
             // No move performed, try slightly further
             currentCheck++;
         }
-
         // A move never happened, so return false.
         return false;
     }
