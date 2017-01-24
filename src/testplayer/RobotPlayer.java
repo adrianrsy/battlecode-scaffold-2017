@@ -4,16 +4,26 @@ import testplayer.Archon;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-    //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
-    static int PHASE_NUMBER_CHANNEL = 0;
     
     //Except for the channel that contains the round number
     static int ROUND_NUMBER_CHANNEL = 1000;
     
+    //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
+    static final int PHASE_NUMBER_CHANNEL = 0;
+    static final int ARCHON_DIRECTION_RADIANS_CHANNEL = 1;
+    static final int ARCHON_LOCATION_X_CHANNEL = 2;
+    static final int ARCHON_LOCATION_Y_CHANNEL = 3;
+    static final int LIVING_GARDENERS_CHANNEL = 4;
+    static final int IMMEDIATE_TARGET_X_CHANNEL = 5;
+    static final int IMMEDIATE_TARGET_Y_CHANNEL = 6;
     
-    //Origin
-    static MapLocation ORIGIN = new MapLocation(0,0);
-    
+    static final double DYING_GARDENER_HP_THRESHOLD = 0.19 * RobotType.GARDENER.maxHealth;
+    static final double DYING_SOLDIER_HP_THRESHOLD = 0.19 * RobotType.SOLDIER.maxHealth;
+    static final double DYING_LUMBERJACK_HP_THRESHOLD = 0.19 * RobotType.LUMBERJACK.maxHealth;
+    static final double DYING_TANK_HP_THRESHOLD = 0.19 * RobotType.TANK.maxHealth;
+    static final double DYING_SCOUT_HP_THRESHOLD = 0.19 * RobotType.SCOUT.maxHealth;
+    static final int MAX_ARCHONS = 3;
+
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -32,178 +42,67 @@ public strictfp class RobotPlayer {
                 Archon.runArchonPhase1();
                 break;
             case GARDENER:
-                runGardener();
+                Gardener.runGardenerPhase1();
                 break;
             case SOLDIER:
-                runSoldier();
+                Soldier.runSoldierPhase1();
                 break;
             case LUMBERJACK:
-                runLumberjack();
+                Lumberjack.runLumberjack();
+                break;
+            case TANK:
+                break;
+            case SCOUT:
                 break;
         }
 	}
+    
+    static int getNearestArchon() throws GameActionException {
+        MapLocation loc = rc.getLocation();
+        int archonNum = 1;
+        float min_distance = Float.MAX_VALUE;
+        for(int i = 1; i <= rc.getInitialArchonLocations(rc.getTeam()).length; i++){
+            float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
+            float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
+            MapLocation archonLoc = new MapLocation(archonX, archonY);
+            float dist = loc.distanceTo(archonLoc);
+            if(dist < min_distance){
+                min_distance = dist;
+                archonNum = i;
+            }
+        }
+    	return archonNum;
+    }
+    
+    static RobotInfo findNearestRobot(RobotInfo[] robotList, MapLocation location) {
+    	float smallestDistance = Float.MAX_VALUE;
+    	RobotInfo nearestRobot = null;
+    	for (RobotInfo robotInfo : robotList) {
+    		float distance = robotInfo.location.distanceTo(location);
+			if (distance < smallestDistance) {
+				smallestDistance = distance;
+				nearestRobot = robotInfo;
+			}
+    	}
+    	return nearestRobot;
+    }
 
     
-    
-    static void runArchonPhase1(int archonNum) throws GameActionException{
-        //target1 is the initial target to aim for
-        //target1.1 is the initial direction to aim for if initial target location is unknown
-        //target2 is the direction it will go after reaching target1
-        MapLocation target1 = rc.getLocation();
-        Direction target11 = Direction.getSouth(); //Arbitrary default value
-        Direction target2 = Direction.getWest();//Arbitrary default value
-        boolean hasTarget = true;
-        
-        if(archonNum ==1){
-            MapLocation loc = rc.getLocation();
-            if(loc.distanceTo(ORIGIN) < 30){
-                target1 = ORIGIN;
-                target2 = Direction.getNorth();
-            }
-            else if(loc.x < 21){
-                target1 = new MapLocation(0,loc.y);
-                target2 = Direction.getEast();
-            }
-            else if(loc.y < 21){
-                target1 = new MapLocation(loc.x,0);
-                target2 = Direction.getNorth();
-            }
-            else{
-                hasTarget = false;
-                if(loc.x > loc.y){
-                    target11 = Direction.getEast();
-                    target2 = Direction.getNorth();
-                }
-                else{
-                    target11 = Direction.getNorth();
-                    target2 = Direction.getEast();
-                }
-            }
-            while (!hasTarget){
-                tryMove(target11);
-                
-            }
-            while (hasTarget) {
-                loc = rc.getLocation();
-                tryMove(loc.directionTo(target1));
-            }
-        }
-    }
-
-	static void runGardener() throws GameActionException {
-        System.out.println("I'm a gardener!");
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-
-                // Listen for home archon's location
-                int xPos = rc.readBroadcast(0);
-                int yPos = rc.readBroadcast(1);
-                MapLocation archonLoc = new MapLocation(xPos,yPos);
-
-                // Generate a random direction
-                Direction dir = randomDirection();
-
-                // Randomly attempt to build a soldier or lumberjack in this direction
-                if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01) {
-                    rc.buildRobot(RobotType.SOLDIER, dir);
-                } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
-                    rc.buildRobot(RobotType.LUMBERJACK, dir);
-                }
-
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Gardener Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runSoldier() throws GameActionException {
-        System.out.println("I'm an soldier!");
-        Team enemy = rc.getTeam().opponent();
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-                MapLocation myLocation = rc.getLocation();
-
-                // See if there are any nearby enemy robots
-                RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
-
-                // If there are some...
-                if (robots.length > 0) {
-                    // And we have enough bullets, and haven't attacked yet this turn...
-                    if (rc.canFireSingleShot()) {
-                        // ...Then fire a bullet in the direction of the enemy.
-                        rc.fireSingleShot(rc.getLocation().directionTo(robots[0].location));
-                    }
-                }
-
-                // Move randomly
-                tryMove(randomDirection());
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Soldier Exception");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    static void runLumberjack() throws GameActionException {
-        System.out.println("I'm a lumberjack!");
-        Team enemy = rc.getTeam().opponent();
-
-        // The code you want your robot to perform every round should be in this loop
-        while (true) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
-            try {
-
-                // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
-                RobotInfo[] robots = rc.senseNearbyRobots(RobotType.LUMBERJACK.bodyRadius+GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-
-                if(robots.length > 0 && !rc.hasAttacked()) {
-                    // Use strike() to hit all nearby robots!
-                    rc.strike();
-                } else {
-                    // No close robots, so search for robots within sight radius
-                    robots = rc.senseNearbyRobots(-1,enemy);
-
-                    // If there is a robot, move towards it
-                    if(robots.length > 0) {
-                        MapLocation myLocation = rc.getLocation();
-                        MapLocation enemyLocation = robots[0].getLocation();
-                        Direction toEnemy = myLocation.directionTo(enemyLocation);
-
-                        tryMove(toEnemy);
-                    } else {
-                        // Move Randomly
-                        tryMove(randomDirection());
-                    }
-                }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
-                Clock.yield();
-
-            } catch (Exception e) {
-                System.out.println("Lumberjack Exception");
-                e.printStackTrace();
-            }
-        }
+    static boolean isDying(RobotType robotType, float robotHp) {
+    	switch (robotType) {
+    	case GARDENER:
+    	    return robotHp < DYING_GARDENER_HP_THRESHOLD; 
+    	case SOLDIER:
+    		return robotHp < DYING_SOLDIER_HP_THRESHOLD;
+    	case LUMBERJACK:
+    		return robotHp < DYING_LUMBERJACK_HP_THRESHOLD;
+    	case SCOUT:
+    	    return robotHp < DYING_SCOUT_HP_THRESHOLD;
+    	case TANK:
+    	    return robotHp < DYING_TANK_HP_THRESHOLD;
+    	default:
+    		return false;
+    	}
     }
 
     /**
@@ -243,7 +142,6 @@ public strictfp class RobotPlayer {
         }
 
         // Now try a bunch of similar angles
-        boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {

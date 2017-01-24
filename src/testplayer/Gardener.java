@@ -44,23 +44,12 @@ public strictfp class Gardener {
         System.out.println("I'm a gardener!");
         int turnCount = 0;
         MapLocation loc = rc.getLocation();
-        int archonNum = 1;
-        float min_distance = 1000; //large arbitrary number
-        for(int i = 1; i <= rc.getInitialArchonLocations(rc.getTeam()).length; i++){
-            float archonX = ((float) rc.readBroadcast(Archon.ARCHON_LOCATION_X_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
-            float archonY = ((float) rc.readBroadcast(Archon.ARCHON_LOCATION_Y_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
-            MapLocation archonLoc = new MapLocation(archonX, archonY);
-            float dist = loc.distanceTo(archonLoc);
-            if(dist < min_distance){
-                min_distance = dist;
-                archonNum = i;
-            }
-        }
-        float headedToRadians = ((float) rc.readBroadcast(Archon.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/Archon.CONVERSION_OFFSET;
+        int archonNum = RobotPlayer.getNearestArchon();
+        float headedToRadians = ((float) rc.readBroadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/Archon.CONVERSION_OFFSET;
         Direction headedTo = new Direction(headedToRadians);
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
-            phaseNum = rc.readBroadcast(Archon.PHASE_NUMBER_CHANNEL*3+archonNum);
+            phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
             if(turnCount%2 == 0){
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo);
             }
@@ -84,8 +73,8 @@ public strictfp class Gardener {
             runGardenerPhase2();
         }
         turnCount = 0;
-        int currentActiveGardenerNum = rc.readBroadcast(Archon.LIVING_GARDENERS_CHANNEL*3+archonNum);
-        rc.broadcast(Archon.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
+        int currentActiveGardenerNum = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3+archonNum);
+        rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
         while(turnCount < MOVE_AWAY_TURNS){
             RobotPlayer.moveTowards(headedTo.opposite());
             Clock.yield();

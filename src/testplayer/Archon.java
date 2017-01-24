@@ -15,18 +15,6 @@ public strictfp class Archon {
     //become inactive, a.k.a plant trees and stall
     static int PHASE_1_ACTIVE_GARDENER_LIMIT = 6;
     
-    //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
-    static int PHASE_NUMBER_CHANNEL = 0;
-    static int ARCHON_DIRECTION_RADIANS_CHANNEL = 1;
-    static int ARCHON_LOCATION_X_CHANNEL = 2;
-    static int ARCHON_LOCATION_Y_CHANNEL = 3;
-    static int LIVING_GARDENERS_CHANNEL = 4;
-    static int IMMEDIATE_TARGET_X_CHANNEL = 5;
-    static int IMMEDIATE_TARGET_Y_CHANNEL = 6;
-    
-    //Except for the channel that contains the round number
-    static int ROUND_NUMBER_CHANNEL = 1000;
-    
     //Direction variables
     static Direction NORTH = Direction.getNorth();
     static Direction SOUTH = Direction.getSouth();
@@ -77,28 +65,28 @@ public strictfp class Archon {
         int phaseNum = 1;
         
         //If first channel has not yet been assigned, this must be the first archon
-        if(rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 1) != 1){
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 1, phaseNum);
+        if(rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 1) != 1){
+            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 1, phaseNum);
             archonNum = 1;
         }
         //If second channel has not yet been assigned, this must be the second archon
-        else if (rc.readBroadcast(PHASE_NUMBER_CHANNEL*3 + 2) != 1){
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 2, 1);
+        else if (rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 2) != 1){
+            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 2, 1);
             archonNum =2;
         }
         //Otherwise, it is the third archon
         else{
-            rc.broadcast(PHASE_NUMBER_CHANNEL*3 + 3, 1);
+            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 3, 1);
             archonNum = 3;
         }
         
         int numRoundsRemaining;
         if(archonNum == 1){
             numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
-            rc.broadcast(ROUND_NUMBER_CHANNEL, numRoundsRemaining);
+            rc.broadcast(RobotPlayer.ROUND_NUMBER_CHANNEL, numRoundsRemaining);
         }
         else{
-            numRoundsRemaining = rc.readBroadcast(ROUND_NUMBER_CHANNEL);
+            numRoundsRemaining = rc.readBroadcast(RobotPlayer.ROUND_NUMBER_CHANNEL);
         }
         
         Direction headedTo;
@@ -120,11 +108,11 @@ public strictfp class Archon {
         int turnCount = 0;
         while(true){
             try{
-                rc.broadcast(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*CONVERSION_OFFSET));
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo);
                 MapLocation loc = rc.getLocation();
-                rc.broadcast(ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*CONVERSION_OFFSET));
-                rc.broadcast(ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*CONVERSION_OFFSET));
                 if(!hasMoved){
                     TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
                     boolean obstacleIsTree = false;
@@ -134,8 +122,8 @@ public strictfp class Archon {
                            loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                            loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
                             if(rc.canShake(treeLoc)) rc.shake(treeLoc);
-                            rc.broadcast(IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
-                            rc.broadcast(IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
+                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
                             obstacleIsTree = true;
                             break;
                         }
@@ -147,24 +135,24 @@ public strictfp class Archon {
                             if(!nearbyRobot.getTeam().equals(rc.getTeam()) &&
                                loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                                loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
-                                rc.broadcast(IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
-                                rc.broadcast(IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
                                 break;
                             }
                         }
                     }   
                 }
-                int numActiveGardeners = rc.readBroadcast(LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                int numActiveGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
                 if (numActiveGardeners < PHASE_1_ACTIVE_GARDENER_LIMIT){
                     boolean hasHired = tryHireGardener(headedTo.opposite(), 90, 6);
                     if(hasHired){
-                        rc.broadcast(LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
+                        rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
                     }
                 }
                 
                 turnCount+=1;
                 if(turnCount > PHASE_1_TURN_LIMIT){
-                    rc.broadcast(PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
+                    rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
                     break;
                 }
             }catch (Exception e) {
