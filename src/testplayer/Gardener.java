@@ -73,7 +73,7 @@ public strictfp class Gardener {
             } 
         }
         if(phaseNum == 2){
-            runGardenerPhase2();
+            runGardenerPhase2(archonNum);
         }
         turnCount = 0;
         int currentActiveGardenerNum = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3+archonNum);
@@ -113,7 +113,7 @@ public strictfp class Gardener {
      * <br>
      * @throws GameActionException
      */
-    static void runGardenerPhase2() throws GameActionException{
+    static void runGardenerPhase2(int archonNum) throws GameActionException{
     
     }
     

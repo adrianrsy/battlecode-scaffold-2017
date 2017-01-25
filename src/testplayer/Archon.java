@@ -41,7 +41,8 @@ public strictfp class Archon {
      * <li>16-18 -> Immediate Target x
      * <li>19-21 -> Immediate Target y
      * <li>22-24 -> Target type (1 for tree, 2 for robot)
-     * <li>25-27 -> Target id 
+     * <li>25-27 -> Target id
+     * <li>28-30 -> Enemy archon id 
      * <li>1000  -> round number
      * </ul>
      *<br>
@@ -63,6 +64,11 @@ public strictfp class Archon {
         System.out.println("I'm an archon!");
         int archonNum;
         int phaseNum = 1;
+        
+        //Initialize enemy archon ids to -1 while unidentified.
+        for(int i =1; i<=3; i++){
+            rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 + i, -1);
+        }
         
         //If first channel has not yet been assigned, this must be the first archon
         if(rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 1) != 1){
@@ -164,7 +170,7 @@ public strictfp class Archon {
             e.printStackTrace();
             } 
         }
-        runArchonPhase2();
+        runArchonPhase2(archonNum, headedTo);
     }
     /**
      * For Phase 2<br>
@@ -172,12 +178,34 @@ public strictfp class Archon {
      * It will try to build gardeners whenever the number of unsettled gardeners drops below a limit 
      * (using the living gardener channel), and each gardener above the limit halves the chance of it 
      * continuing to build gardeners.<br>
+     * <br>
+     * 
+     * Channels:<br>
+     * <ul>
+     * <li>13-15 -> Living Gardener channel
+     * <li>37-39 -> Gardener turn counter channel
      * @throws GameActionException
      */
-    static void runArchonPhase2() throws GameActionException{
-    
+    static void runArchonPhase2(int archonNum, Direction headedTo) throws GameActionException{
+        rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
+        rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, 1);
+        while(true){
+            int numLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
+            if(numLivingGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
+                tryHireGardener(headedTo.opposite(), 110, 11);
+            }
+        }
     }
     
+    /**
+     * Tries to hire a gardener in the direction dir with at most degreeOffset offset checking checksPerSide times
+     * on each side of dir.
+     * @param dir
+     * @param degreeOffset
+     * @param checksPerSide
+     * @return
+     * @throws GameActionException
+     */
     static boolean tryHireGardener(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
         if(rc.getBuildCooldownTurns() > 0 || rc.getTeamBullets() < RobotType.GARDENER.bulletCost){
             return false;

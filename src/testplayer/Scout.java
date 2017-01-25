@@ -55,7 +55,7 @@ public strictfp class Scout {
                 	if (robot.type == RobotType.ARCHON) {
                 		enemyArchons++;
                 		// FIXME
-                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_CHANNEL*3+enemyArchons, robot.ID);
+                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+enemyArchons, robot.ID);
                 	}
                 }
 

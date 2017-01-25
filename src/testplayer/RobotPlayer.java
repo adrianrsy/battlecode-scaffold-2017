@@ -46,7 +46,10 @@ public strictfp class RobotPlayer {
     static final int IMMEDIATE_TARGET_Y_CHANNEL = 6;
     static final int TARGET_TYPE = 7; //1 for tree, 2 for robot
     static final int TARGET_ID = 8;
-    static final int ENEMY_ARCHON_CHANNEL = 9; //All three to be read by all shooting units at the start of the turn
+    static final int ENEMY_ARCHON_ID_CHANNEL = 9; //All three to be read by all shooting units at the start of the turn
+    static final int ENEMY_ARCHON_X_CHANNEL = 10;
+    static final int ENEMY_ARCHON_Y_CHANNEL = 11;
+    static final int GARDENER_TURN_COUNTER = 12;
     
     static final int TARGET_IS_TREE = 1;
     static final int TARGET_IS_ROBOT = 2;

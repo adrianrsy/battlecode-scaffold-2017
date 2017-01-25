@@ -5,12 +5,6 @@ import testplayer.RobotPlayer;
 public strictfp class Soldier {
     static RobotController rc;
     
-    //Active turn limit
-    static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
-    
-    //Turns it will move away until inactive
-    static int MOVE_AWAY_TURNS = 5;
-    
     /**
      * A soldier will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>
@@ -37,7 +31,7 @@ public strictfp class Soldier {
         Team enemy = ownTeam.opponent();
         int archonNum = RobotPlayer.getNearestArchon();
         Direction headedTo = RobotPlayer.getArchonDirection(archonNum).opposite();
-        boolean hasSentDyingBroadcast = false;
+        int currentTargetId = -1;
 
         // The code you want your robot to perform every round should be in this loop
         while (true) {
@@ -60,9 +54,25 @@ public strictfp class Soldier {
                 		if (enemyArchons == 1) {
                 			nearestArchonLoc = robot.location;
                 		}
-                		// FIXME: how to broadcast about enemy archon?
-                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_CHANNEL*3+enemyArchons, (int) (robot.location.x*RobotPlayer.CONVERSION_OFFSET));
+                		for(int i =1; i<=3; i++){
+                            int possibleArchonId = rc.readBroadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 +i);
+                            if(possibleArchonId == -1){
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 + i, robot.getID());
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                break;
+                            }
+                            if(possibleArchonId == robot.getID()){
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                break;
+                            }
+                		}
                 	}
+                }
+                if (nearbyEnemies.length > 0){
+                    currentTargetId = nearbyEnemies[0].getID();
+                    headedTo = ownLocation.directionTo(nearbyEnemies[0].getLocation());
                 }
                 
                 if (nearbyEnemies.length >= 6 && rc.canFirePentadShot()) {
@@ -86,15 +96,6 @@ public strictfp class Soldier {
                 		rc.fireSingleShot(ownLocation.directionTo(nearbyEnemies[0].location));
                 	}
                 }
- 
-                
-                // send a broadcast to the archon controlling it if it's dying so that it gets replaced
-                if (!hasSentDyingBroadcast && RobotPlayer.isDying()) {
-                    int channel = archonNum + RobotPlayer.MAX_ARCHONS;
-                    int previousCount = rc.readBroadcast(channel);
-                    rc.broadcast(channel, previousCount+1);
-                    hasSentDyingBroadcast = true;
-                }
 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
@@ -107,3 +108,12 @@ public strictfp class Soldier {
     }
 
 }
+
+//boolean hasSentDyingBroadcast = false;
+//// send a broadcast to the archon controlling it if it's dying so that it gets replaced
+//if (!hasSentDyingBroadcast && RobotPlayer.isDying()) {
+//  int channel = archonNum + RobotPlayer.MAX_ARCHONS;
+//  int previousCount = rc.readBroadcast(channel);
+//  rc.broadcast(channel, previousCount+1);
+//  hasSentDyingBroadcast = true;
+//}
