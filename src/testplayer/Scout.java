@@ -45,8 +45,8 @@ public strictfp class Scout {
         while (!hidingMode) {
             try {
             	// first try to dodge any bullets
-            	RobotPlayer.dodge();
-            	RobotPlayer.moveTowards(headedTo);
+            	RobotPlayer.dodge(rc);
+            	RobotPlayer.moveTowards(headedTo, rc);
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
                 for (RobotInfo robot : nearbyEnemies) {
                 	if (robot.type == RobotType.ARCHON) {
@@ -80,7 +80,7 @@ public strictfp class Scout {
         while (hidingMode) {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                RobotPlayer.dodge(4);
+                RobotPlayer.dodge(4, rc);
             	MapLocation ownLocation = rc.getLocation();
             	TreeInfo treeAtLocation = rc.senseTreeAtLocation(ownLocation);
             	if (treeAtLocation != null && treeAtLocation.team == enemy) {

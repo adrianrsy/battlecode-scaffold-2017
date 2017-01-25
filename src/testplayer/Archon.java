@@ -102,7 +102,7 @@ public strictfp class Archon {
         Direction headedTo;
         switch(archonNum){
         case 1:
-            headedTo = SOUTH_WEST;
+            headedTo = NORTH_EAST;
             break;
         case 2:
             headedTo = SOUTH_EAST;
@@ -119,7 +119,7 @@ public strictfp class Archon {
         while(true){
             try{
                 rc.broadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*RobotPlayer.CONVERSION_OFFSET));
-                boolean hasMoved = RobotPlayer.moveTowards(headedTo);
+                boolean hasMoved = RobotPlayer.moveTowards(headedTo, rc);
                 MapLocation loc = rc.getLocation();
                 rc.broadcast(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*RobotPlayer.CONVERSION_OFFSET));
                 rc.broadcast(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*RobotPlayer.CONVERSION_OFFSET));
@@ -165,6 +165,8 @@ public strictfp class Archon {
                 }
                 
                 turnCount+=1;
+                System.out.println("This is archon " + archonNum);
+                System.out.println("turnCount is" + turnCount);
                 if(turnCount > PHASE_1_TURN_LIMIT){
                     rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
                     break;

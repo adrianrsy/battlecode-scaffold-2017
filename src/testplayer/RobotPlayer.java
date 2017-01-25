@@ -203,7 +203,7 @@ public strictfp class RobotPlayer {
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         // First, try intended direction
-        if (rc.canMove(dir)) {
+        if (!rc.hasMoved() && rc.canMove(dir)) {
             rc.move(dir);
             return true;
         }
@@ -211,12 +211,12 @@ public strictfp class RobotPlayer {
         int currentCheck = 1;
         while(currentCheck<=checksPerSide) {
             // Try the offset of the left side
-            if(rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+            if(!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
                 rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
                 return true;
             }
             // Try the offset on the right side
-            if(rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+            if(!rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
                 rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
                 return true;
             }
@@ -241,7 +241,7 @@ public strictfp class RobotPlayer {
         while(attempts < numChecks){
             float multiplier = (float) (2*Math.random()) - 1;
             Direction randomDir = dir.rotateLeftDegrees(multiplier * degreeOffset);
-            if(rc.canMove(randomDir)){
+            if(!rc.hasMoved() && rc.canMove(randomDir)){
                 rc.move(randomDir);
                 return true;
             }
@@ -256,7 +256,7 @@ public strictfp class RobotPlayer {
      * @return true if the robot has successfully moved towards the point
      * @throws GameActionException
      */
-    static boolean moveTowards(MapLocation loc) throws GameActionException{
+    static boolean moveTowards(MapLocation loc, RobotController rc) throws GameActionException{
         return tryMove(rc.getLocation().directionTo(loc), 45, 4);
     }
     
@@ -266,7 +266,7 @@ public strictfp class RobotPlayer {
      * @return true if the robot has successfully moved towards the point
      * @throws GameActionException
      */
-    static boolean moveTowards(Direction dir) throws GameActionException{
+    static boolean moveTowards(Direction dir, RobotController rc) throws GameActionException{
         return tryMove(dir, 45, 4);
     }
     
@@ -278,7 +278,7 @@ public strictfp class RobotPlayer {
      * @param bullet The bullet in question
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
-    static boolean willCollideWithMe(BulletInfo bullet) {
+    static boolean willCollideWithMe(BulletInfo bullet, RobotController rc) {
         MapLocation myLocation = rc.getLocation();
 
         // Get relevant bullet information
@@ -308,11 +308,11 @@ public strictfp class RobotPlayer {
      * Attempts to dodge incoming bullets that it is in the line of fire from
      * @throws GameActionException
      */
-    static void dodge() throws GameActionException {
+    static void dodge(RobotController rc) throws GameActionException {
         BulletInfo[] bullets = rc.senseNearbyBullets();
         for (BulletInfo bi : bullets) {
-            if (willCollideWithMe(bi)) {
-                trySidestep(bi);
+            if (willCollideWithMe(bi, rc)) {
+                trySidestep(bi, rc);
             }
         }
     }
@@ -321,11 +321,11 @@ public strictfp class RobotPlayer {
      * Attempts to dodge incoming bullets that it is in the line of fire from within a certain distance
      * @throws GameActionException
      */
-    static void dodge(float dist) throws GameActionException {
+    static void dodge(float dist, RobotController rc) throws GameActionException {
         BulletInfo[] bullets = rc.senseNearbyBullets(dist);
         for (BulletInfo bi : bullets) {
-            if (willCollideWithMe(bi)) {
-                trySidestep(bi);
+            if (willCollideWithMe(bi, rc)) {
+                trySidestep(bi, rc);
             }
         }
     }
@@ -336,7 +336,7 @@ public strictfp class RobotPlayer {
      * @return
      * @throws GameActionException
      */
-    static boolean trySidestep(BulletInfo bullet) throws GameActionException{
+    static boolean trySidestep(BulletInfo bullet, RobotController rc) throws GameActionException{
         Direction towards = bullet.getDir();
         //MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
         //MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
@@ -348,7 +348,7 @@ public strictfp class RobotPlayer {
      * @return a boolean of whether an attack was tried
      * @throws GameActionException
      */
-    static boolean tryAttackEnemyArchon() throws GameActionException {
+    static boolean tryAttackEnemyArchon(RobotController rc) throws GameActionException {
     	for (int i=1; i<=MAX_ARCHONS; i++) {
     		int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
     		if (enemyArchonId != 0 && rc.canSenseRobot(enemyArchonId)) {

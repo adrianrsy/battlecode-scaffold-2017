@@ -58,10 +58,10 @@ public strictfp class Lumberjack {
                 //If the target specified by the archon is a tree and can be sensed by the lumberjack, 
                 //it should move toward that general direction
                 if(targetType == 1 && rc.canSenseTree(targetTreeId)){
-                    RobotPlayer.moveTowards(rc.senseTree(targetTreeId).getLocation());
+                    RobotPlayer.moveTowards(rc.senseTree(targetTreeId).getLocation(), rc);
                 }
                 else{
-                    RobotPlayer.moveTowards(RobotPlayer.getArchonDirection(archonNum));
+                    RobotPlayer.moveTowards(RobotPlayer.getArchonDirection(archonNum), rc);
                 }
                 
                 //List of trees that the lumberjack can chop/shake
@@ -114,7 +114,7 @@ public strictfp class Lumberjack {
         while(turnCount >=PHASE_1_ACTIVE_TURN_LIMIT){
             
             try {
-                RobotPlayer.dodge(4); //based on max bullet speed
+                RobotPlayer.dodge(4, rc); //based on max bullet speed
                 
                 //List of trees that the lumberjack can chop/shake
                 RobotPlayer.tryMove(RobotPlayer.getArchonDirection(archonNum), 110, 11);

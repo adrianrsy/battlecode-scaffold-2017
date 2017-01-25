@@ -54,7 +54,7 @@ public strictfp class Gardener {
             try{
                 phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
                 if(turnCount%2 == 0){
-                    RobotPlayer.moveTowards(headedTo);
+                    RobotPlayer.moveTowards(headedTo, rc);
                 }
                 double randomVar = Math.random();
                 if(randomVar < 0.4){
@@ -83,7 +83,7 @@ public strictfp class Gardener {
         int currentActiveGardenerNum = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3+archonNum);
         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
         while(turnCount < MOVE_AWAY_TURNS){
-            RobotPlayer.moveTowards(headedTo.opposite());
+            RobotPlayer.moveTowards(headedTo.opposite(), rc);
             turnCount ++;
             Clock.yield();
         }
@@ -128,7 +128,7 @@ public strictfp class Gardener {
         while(!hasSettled && !hasBroadcastedDying){
             try{
                 headedTo = rc.getLocation().directionTo(archonLoc).opposite();
-                RobotPlayer.dodge(4);
+                RobotPlayer.dodge(4, rc);
                 RobotPlayer.tryMoveInGeneralDirection(headedTo.opposite(), 90, 9);
                 int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
                 if(isTankBuilder){
@@ -302,10 +302,10 @@ public strictfp class Gardener {
      * @throws GameActionException
      */
     void tryWaterHexagonal() throws GameActionException{
-        TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 2.5, rc.getTeam());
+        TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 4, rc.getTeam());
         int minHPTreeID = 0; //arbitrary id number
         float minHP = GameConstants.BULLET_TREE_MAX_HEALTH; //maximal amount of hp
-        for(int i = 0; i<Math.max(6, nearbyTeamTrees.length); i++){
+        for(int i = 0; i<Math.min(6, nearbyTeamTrees.length); i++){
             if(rc.canWater(nearbyTeamTrees[i].getID()) && nearbyTeamTrees[i].getHealth()<minHP){
                 minHPTreeID = nearbyTeamTrees[i].getID();
                 minHP = nearbyTeamTrees[i].getHealth();
