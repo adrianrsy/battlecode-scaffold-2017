@@ -12,31 +12,22 @@ public strictfp class Soldier {
     static int MOVE_AWAY_TURNS = 5;
     
     /**
-     * For Phase 1<br>
-     * A gardener will identify which archon group it belongs to via checking the three sets of archon locations and 
+     * A soldier will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>
-     * For the first 60 turns, it will be an active gardener and move in the direction of its leader archon every other turn 
-     * by reading the movement direction of said archon while trying to build other robots behind it for other purposes, 
-     * e.g. lumberjacks for terrain clearing, scouts for harassing/scouting, soldiers for basic defense.<br>
-     * While active, it will check for the phase number each turn and perform these tasks/switch to a different task.
-     * After 60 turns, it will stop being an active gardener by signaling to the broadcast that it is no longer active, 
-     * i.e. decrement the active gardener counter. Upon being inactive, it will spend 5 turns moving away from the archon 
-     * then planting trees around itself in a hexagonal fashion.<br>
-     * When inactive, it will water the adjacent tree with the lowest hp.<br>
-     *<br>
+     * Soldiers will always try to dodge nearby bullets, then move in the general opposite direction of their archon leader 
+     * then try to shoot at the enemy archon if within sensing distance, or the closest enemy within sensing distance. 
+     * If multiple enemies are within sensing distance, fire a triple shot (if >3), or a quintuple shot (if >6).<br>
+     * If the archon is detected in sensing distance, this will be broadcasted to a channel (to be read by shooting units
+     * of all three archons, and they will try to sense it and shoot at it.)
      *
      * Channels:<br>
      * <ul>
-     * <li>1 - 3 -> Phase number
      * <li>4 - 6 -> Archon movement direction
-     * <li>7 - 9 -> Archon location x
-     * <li>10-12 -> Archon location y
-     * <li>13-15 -> Living Gardener channel
      * </ul>
      *<br>
      *
      * Movement:<br>
-     * Moves once every two turns in the same direction as the archon it belongs to
+     * Moves every turn.
      *<br>
      */
     

@@ -1,12 +1,40 @@
 package testplayer;
 import battlecode.common.*;
-import testplayer.Archon;
+
+/*
+ * TODO:
+ * 
+ * Archon:
+ * Finish writing up archon phase 2 description and add channels
+ * Write code for archon phase 2 (fairly short, mostly channel management)
+ * 
+ * Gardener:
+ * Finish writing up gardener phase 2 description and add channels
+ * Write gardener phase 2 code (helper functions for checking planting location might take time)
+ * 
+ * Lumberjack:
+ * done
+ * 
+ * Soldier:
+ * Edit combat code to match description
+ * 
+ * Scout:
+ * Everything. Basic idea is to use soldier code and try dodging and moving away from archon til
+ * enemy archon is detected. Once detected, signal id and location to channel, then move into enemy trees
+ * and fire at stuff.
+ * 
+ * Tank:
+ * Everything. Basic idea is to attempt dodges/ move towards enemy archon if it has been scouted. Continually fire
+ * maximum number of shots at closest detectable enemy/ archon if it is detectable unless friendly fire occurs (then reduce
+ * shot size)
+ * 
+ */
 
 public strictfp class RobotPlayer {
     static RobotController rc;
     
-    //Except for the channel that contains the round number
-    static int ROUND_NUMBER_CHANNEL = 1000;
+    //Offset when converting floats to integers and vice versa
+    static int CONVERSION_OFFSET = 100000;
     
     //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
     static final int PHASE_NUMBER_CHANNEL = 0;
@@ -16,6 +44,12 @@ public strictfp class RobotPlayer {
     static final int LIVING_GARDENERS_CHANNEL = 4;
     static final int IMMEDIATE_TARGET_X_CHANNEL = 5;
     static final int IMMEDIATE_TARGET_Y_CHANNEL = 6;
+    static final int TARGET_TYPE = 7; //1 for tree, 2 for robot
+    static final int TARGET_ID = 8;
+    static final int ENEMY_ARCHON_CHANNEL = 9; //All three to be read by all shooting units at the start of the turn
+    
+    static final int TARGET_IS_TREE = 1;
+    static final int TARGET_IS_ROBOT = 2;
     
     static final double DYING_GARDENER_HP_THRESHOLD = 0.19 * RobotType.GARDENER.maxHealth;
     static final double DYING_SOLDIER_HP_THRESHOLD = 0.19 * RobotType.SOLDIER.maxHealth;
@@ -66,8 +100,8 @@ public strictfp class RobotPlayer {
         int archonNum = 1;
         float min_distance = Float.MAX_VALUE;
         for(int i = 1; i <= rc.getInitialArchonLocations(rc.getTeam()).length; i++){
-            float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
-            float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+i)) / Archon.CONVERSION_OFFSET;
+            float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+i)) / CONVERSION_OFFSET;
+            float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+i)) / CONVERSION_OFFSET;
             MapLocation archonLoc = new MapLocation(archonX, archonY);
             float dist = loc.distanceTo(archonLoc);
             if(dist < min_distance){
@@ -76,6 +110,11 @@ public strictfp class RobotPlayer {
             }
         }
     	return archonNum;
+    }
+    
+    static Direction getArchonDirection(int archonNum) throws GameActionException{
+        float headedToRadians = ((float) rc.readBroadcast(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/CONVERSION_OFFSET;
+        return new Direction(headedToRadians);
     }
     
     /**
@@ -176,6 +215,29 @@ public strictfp class RobotPlayer {
     }
     
     /**
+     * Attempts to move randomly in the general direction of dir at most degreeOffset away, trying to move
+     * numChecks times
+     * @param dir direction to attempt moving towards
+     * @param degreeOffset 
+     * @param numChecks
+     * @return true if it successfully moves
+     * @throws GameActionException 
+     */
+    static boolean tryMoveInGeneralDirection(Direction dir, float degreeOffset, int numChecks) throws GameActionException{
+        int attempts = 0;
+        while(attempts < numChecks){
+            float multiplier = (float) (2*Math.random()) - 1;
+            Direction randomDir = dir.rotateLeftDegrees(multiplier * degreeOffset);
+            if(rc.canMove(randomDir)){
+                rc.move(randomDir);
+                return true;
+            }
+            attempts +=1;
+        }
+        return false;
+    }
+    
+    /**
      * Attempts to move towards a certain point while avoiding small obstacles at an angle of at most 60 degrees.
      * @param loc location it is trying to move towards
      * @return true if the robot has successfully moved towards the point
@@ -194,7 +256,8 @@ public strictfp class RobotPlayer {
     static boolean moveTowards(Direction dir) throws GameActionException{
         return tryMove(dir, 45, 4);
     }
-
+    
+    // Can be improved to take into account bullet speed instead of just trajectory?
     /**
      * A slightly more complicated example function, this returns true if the given bullet is on a collision
      * course with the current robot. Doesn't take into account objects between the bullet and this robot.
@@ -226,5 +289,44 @@ public strictfp class RobotPlayer {
         float perpendicularDist = (float)Math.abs(distToRobot * Math.sin(theta)); // soh cah toa :)
 
         return (perpendicularDist <= rc.getType().bodyRadius);
+    }
+    
+    /**
+     * Attempts to dodge incoming bullets that it is in the line of fire from
+     * @throws GameActionException
+     */
+    static void dodge() throws GameActionException {
+        BulletInfo[] bullets = rc.senseNearbyBullets();
+        for (BulletInfo bi : bullets) {
+            if (willCollideWithMe(bi)) {
+                trySidestep(bi);
+            }
+        }
+    }
+    
+    /**
+     * Attempts to dodge incoming bullets that it is in the line of fire from within a certain distance
+     * @throws GameActionException
+     */
+    static void dodge(float dist) throws GameActionException {
+        BulletInfo[] bullets = rc.senseNearbyBullets(dist);
+        for (BulletInfo bi : bullets) {
+            if (willCollideWithMe(bi)) {
+                trySidestep(bi);
+            }
+        }
+    }
+    
+    /**
+     * Attempts to dodge a bullet by moving perpendicularly away from it.
+     * @param bullet
+     * @return
+     * @throws GameActionException
+     */
+    static boolean trySidestep(BulletInfo bullet) throws GameActionException{
+        Direction towards = bullet.getDir();
+        MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
+        MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
+        return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
     }
 }

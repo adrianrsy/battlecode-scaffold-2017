@@ -44,8 +44,7 @@ public strictfp class Gardener {
         System.out.println("I'm a gardener!");
         int turnCount = 0;
         int archonNum = RobotPlayer.getNearestArchon();
-        float headedToRadians = ((float) rc.readBroadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/Archon.CONVERSION_OFFSET;
-        Direction headedTo = new Direction(headedToRadians);
+        Direction headedTo = RobotPlayer.getArchonDirection(archonNum);
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
             try{
@@ -95,6 +94,25 @@ public strictfp class Gardener {
         }
     }
     
+    /**
+     * For Phase 2 <br>
+     * A gardener will move away from the general direction of the archon until it finds a place where it can 
+     * plant at least 4 trees and there is a two unit wide open space after at least 2 of those planned locations.<br>
+     * Every 1st of 3 turns (maintained by a channel incremented by the archon), each of these gardeners (unsettled) will 
+     * read if they are the farthest gardener from their own archon by reading a channel where gardeners post their 
+     * distance and id from the archon, if it matches their id, they will serve as a tank builder.<br>
+     * A tank builder will try to build tanks while continuing to move away from the archon.<br>
+     * Once it can settle down, it becomes inactive (signalling to the living gardener channel) and it will plant trees 
+     * around itself and water the one with the lowest hp.<br>
+     * If it has not yet settled down, it will attempt to build scouts/soldiers in the opposite direction of the 
+     * archon's location with respect to its current location.<br>
+     * Every 2nd of 3 turns, if it is not yet dying, the gardeners will account which is the farthest from the archon
+     * by posting a distance and its id if its distance is greater than the previous distances.<br>
+     * Every 3rd of 3 turns, the first gardener to read the channel will clear the channels used to share those messages.<br>
+     * If it is dying at any point, it signals that it is dying by decrementing the gardener counter.<br>
+     * <br>
+     * @throws GameActionException
+     */
     static void runGardenerPhase2() throws GameActionException{
     
     }

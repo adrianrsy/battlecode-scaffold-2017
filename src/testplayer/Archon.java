@@ -8,12 +8,10 @@ public strictfp class Archon {
     //Phase turn limits
     static int PHASE_1_TURN_LIMIT = 200;
     
-    //Offset when converting floats to integers and vice versa
-    static int CONVERSION_OFFSET = 100000;
-    
     //Limits for active gardener production, after some number of turn gardeners may stay behind and 
     //become inactive, a.k.a plant trees and stall
     static int PHASE_1_ACTIVE_GARDENER_LIMIT = 6;
+    static int PHASE_2_ACTIVE_GARDENER_LIMIT = 10;
     
     //Direction variables
     static Direction NORTH = Direction.getNorth();
@@ -42,6 +40,8 @@ public strictfp class Archon {
      * <li>13-15 -> Living Gardener channel
      * <li>16-18 -> Immediate Target x
      * <li>19-21 -> Immediate Target y
+     * <li>22-24 -> Target type (1 for tree, 2 for robot)
+     * <li>25-27 -> Target id 
      * <li>1000  -> round number
      * </ul>
      *<br>
@@ -83,10 +83,10 @@ public strictfp class Archon {
         int numRoundsRemaining;
         if(archonNum == 1){
             numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
-            rc.broadcast(RobotPlayer.ROUND_NUMBER_CHANNEL, numRoundsRemaining);
+            //rc.broadcast(RobotPlayer.ROUND_NUMBER_CHANNEL, numRoundsRemaining);
         }
         else{
-            numRoundsRemaining = rc.readBroadcast(RobotPlayer.ROUND_NUMBER_CHANNEL);
+            //numRoundsRemaining = rc.readBroadcast(RobotPlayer.ROUND_NUMBER_CHANNEL);
         }
         
         Direction headedTo;
@@ -108,11 +108,11 @@ public strictfp class Archon {
         int turnCount = 0;
         while(true){
             try{
-                rc.broadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*RobotPlayer.CONVERSION_OFFSET));
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo);
                 MapLocation loc = rc.getLocation();
-                rc.broadcast(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*CONVERSION_OFFSET));
-                rc.broadcast(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*RobotPlayer.CONVERSION_OFFSET));
+                rc.broadcast(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*RobotPlayer.CONVERSION_OFFSET));
                 if(!hasMoved){
                     TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
                     boolean obstacleIsTree = false;
@@ -122,8 +122,10 @@ public strictfp class Archon {
                            loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                            loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
                             if(rc.canShake(treeLoc)) rc.shake(treeLoc);
-                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
-                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*RobotPlayer.CONVERSION_OFFSET));
+                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*RobotPlayer.CONVERSION_OFFSET));
+                            rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_TREE);
+                            rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyTree.getID());
                             obstacleIsTree = true;
                             break;
                         }
@@ -135,8 +137,10 @@ public strictfp class Archon {
                             if(!nearbyRobot.getTeam().equals(rc.getTeam()) &&
                                loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                                loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
-                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*CONVERSION_OFFSET));
-                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_ROBOT);
+                                rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyRobot.getID());
                                 break;
                             }
                         }
@@ -162,7 +166,14 @@ public strictfp class Archon {
         }
         runArchonPhase2();
     }
-    
+    /**
+     * For Phase 2<br>
+     * An archon will increment a counter used as a turn counter for the gardeners. <br>
+     * It will try to build gardeners whenever the number of unsettled gardeners drops below a limit 
+     * (using the living gardener channel), and each gardener above the limit halves the chance of it 
+     * continuing to build gardeners.<br>
+     * @throws GameActionException
+     */
     static void runArchonPhase2() throws GameActionException{
     
     }
