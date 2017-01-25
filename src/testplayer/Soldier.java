@@ -35,7 +35,6 @@ public strictfp class Soldier {
         System.out.println("I'm a soldier!");
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();
-        int currentTargetId = 0;
         int archonNum = RobotPlayer.getNearestArchon();
         Direction headedTo = RobotPlayer.getArchonDirection(archonNum).opposite();
         boolean hasSentDyingBroadcast = false;
