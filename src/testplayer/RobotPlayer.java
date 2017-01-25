@@ -82,7 +82,7 @@ public strictfp class RobotPlayer {
                 Lumberjack.runLumberjack();
                 break;
             case TANK:
-                break;
+                Tank.runTank();
             case SCOUT:
                 Scout.runScout();
         }

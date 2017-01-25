@@ -46,7 +46,7 @@ public strictfp class Scout {
             	RobotPlayer.dodge();
             	RobotPlayer.moveTowards(headedTo);
 
-                MapLocation ownLocation = rc.getLocation();
+                // MapLocation ownLocation = rc.getLocation();
 
                 // See if there are any nearby enemy robots
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
@@ -63,7 +63,7 @@ public strictfp class Scout {
                 Clock.yield();
 
             } catch (Exception e) {
-                System.out.println("Soldier Exception");
+                System.out.println("Scout Exception");
                 e.printStackTrace();
             }
         }
@@ -96,7 +96,7 @@ public strictfp class Scout {
                 Clock.yield();
 
             } catch (Exception e) {
-                System.out.println("Soldier Exception");
+                System.out.println("Scout Exception");
                 e.printStackTrace();
             }
         }
