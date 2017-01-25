@@ -47,7 +47,8 @@ public strictfp class Soldier {
             	// first try to dodge any bullets
             	RobotPlayer.dodge();
             	RobotPlayer.moveTowards(headedTo);
-
+            	
+            	RobotPlayer.tryAttackEnemyArchon();
                 MapLocation ownLocation = rc.getLocation();
 
                 // See if there are any nearby enemy robots
@@ -61,7 +62,7 @@ public strictfp class Soldier {
                 			nearestArchonLoc = robot.location;
                 		}
                 		// FIXME: how to broadcast about enemy archon?
-                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_CHANNEL*3+enemyArchons, (int) (robot.location.x*RobotPlayer.CONVERSION_OFFSET));
+                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_CHANNEL*3+enemyArchons, robot.ID);
                 	}
                 }
                 

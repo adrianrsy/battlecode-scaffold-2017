@@ -16,12 +16,10 @@ import battlecode.common.*;
  * done
  * 
  * Soldier:
- * Edit combat code to match description
+ * Fix broadcasting and reading of enemy archon channel.
  * 
  * Scout:
- * Everything. Basic idea is to use soldier code and try dodging and moving away from archon til
- * enemy archon is detected. Once detected, signal id and location to channel, then move into enemy trees
- * and fire at stuff.
+ * Fix broadcasting and reading of enemy archon channel.
  * 
  * Tank:
  * Everything. Basic idea is to attempt dodges/ move towards enemy archon if it has been scouted. Continually fire
@@ -86,7 +84,7 @@ public strictfp class RobotPlayer {
             case TANK:
                 break;
             case SCOUT:
-                break;
+                Scout.runScout();
         }
 	}
     
@@ -328,5 +326,31 @@ public strictfp class RobotPlayer {
         MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
         MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
         return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
+    }
+    
+    /**
+     * Tries to attack an enemy archon based on the enemy archon ids broadcasted
+     * @return a boolean of whether an attack was tried
+     * @throws GameActionException
+     */
+    static boolean tryAttackEnemyArchon() throws GameActionException {
+    	for (int i=1; i<=MAX_ARCHONS; i++) {
+    		int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_CHANNEL*MAX_ARCHONS+i);
+    		if (enemyArchonId != 0) {
+        		try {
+        			RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
+        			if (rc.canFireSingleShot()) {
+        				rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
+        			}
+        			return true;
+        		} catch (GameActionException e) {
+        			// do nothing
+        		}
+    		} else {
+    			// no broadcasted locations for >=i yet; don't do anything
+    			break;
+    		}
+    	}
+    	return false;
     }
 }
