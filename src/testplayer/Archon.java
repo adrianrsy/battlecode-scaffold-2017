@@ -3,7 +3,11 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Archon {
-    static RobotController rc;
+    RobotController rc;
+    
+    public Archon(RobotController rc){
+        this.rc = rc;
+    }
     
     //Phase turn limits
     static int PHASE_1_TURN_LIMIT = 200;
@@ -60,7 +64,7 @@ public strictfp class Archon {
      * Spawned units will follow this direction and will be spawned approximately opposite this direction<br>
      */
     
-    static void runArchonPhase1() throws GameActionException{
+    void runArchonPhase1() throws GameActionException{
         System.out.println("I'm an archon!");
         int archonNum;
         int phaseNum = 1;
@@ -170,7 +174,7 @@ public strictfp class Archon {
             e.printStackTrace();
             } 
         }
-        runArchonPhase2(archonNum, headedTo);
+        this.runArchonPhase2(archonNum, headedTo);
     }
     /**
      * For Phase 2<br>
@@ -188,7 +192,7 @@ public strictfp class Archon {
      * <li>37-39 -> Gardener turn counter channel
      * @throws GameActionException
      */
-    static void runArchonPhase2(int archonNum, Direction headedTo) throws GameActionException{
+    void runArchonPhase2(int archonNum, Direction headedTo) throws GameActionException{
         rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
         rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, 1);
         int currentGardenerTurn = 1;
@@ -229,7 +233,7 @@ public strictfp class Archon {
      * @return
      * @throws GameActionException
      */
-    static boolean tryHireGardener(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
+    boolean tryHireGardener(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
         if(rc.getBuildCooldownTurns() > 0 || rc.getTeamBullets() < RobotType.GARDENER.bulletCost){
             return false;
         }

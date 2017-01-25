@@ -3,7 +3,11 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Lumberjack {
-    static RobotController rc;
+    RobotController rc;
+    
+    public Lumberjack(RobotController rc){
+        this.rc = rc;
+    }
     
     //Active turn limit
     static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
@@ -38,7 +42,7 @@ public strictfp class Lumberjack {
      *<br>
      */
     
-    static void runLumberjack() throws GameActionException {
+    void runLumberjack() throws GameActionException {
         System.out.println("I'm a lumberjack!");
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();

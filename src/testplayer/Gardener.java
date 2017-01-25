@@ -3,10 +3,14 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Gardener {
-    static RobotController rc;
+    RobotController rc;
+    
+    public Gardener(RobotController rc){
+        this.rc = rc;
+    }
     
     //Active turn limit
-    static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
+     int PHASE_1_ACTIVE_TURN_LIMIT = 60;
     
     //Turns it will move away until inactive
     static int MOVE_AWAY_TURNS = 5;
@@ -40,7 +44,7 @@ public strictfp class Gardener {
      *<br>
      */
     
-    static void runGardenerPhase1() throws GameActionException{
+    void runGardenerPhase1() throws GameActionException{
         System.out.println("I'm a gardener!");
         int turnCount = 0;
         int archonNum = RobotPlayer.getNearestArchon();
@@ -114,7 +118,7 @@ public strictfp class Gardener {
      * <br>
      * @throws GameActionException
      */
-    static void runGardenerPhase2(int archonNum) throws GameActionException{
+    void runGardenerPhase2(int archonNum) throws GameActionException{
         MapLocation archonLoc = RobotPlayer.getArchonLoc(archonNum);
         Direction headedTo = rc.getLocation().directionTo(archonLoc).opposite();
         boolean hasBroadcastedDying = false;
@@ -228,7 +232,7 @@ public strictfp class Gardener {
      * @return the direction at which to start planting so at least 4 will fit
      * @throws GameActionException
      */
-    static SettleDirection canSettle() throws GameActionException{
+    SettleDirection canSettle() throws GameActionException{
         Direction randomDir = RobotPlayer.randomDirection();
         int plantableTrees = 0;
         int hasSpace = 0;
@@ -253,7 +257,7 @@ public strictfp class Gardener {
         }
     }
     
-    private static class SettleDirection{
+    private class SettleDirection{
         boolean canSettle;
         Direction dir;
         
@@ -273,7 +277,7 @@ public strictfp class Gardener {
      * Tries to plant trees in a hexagonal formation around itself.
      * @throws GameActionException
      */
-    static void tryPlantHexagonal() throws GameActionException{
+    void tryPlantHexagonal() throws GameActionException{
         for(int i = 0; i< 6; i++){
             Direction dir = Direction.getEast().rotateLeftDegrees(60*i);
             if(rc.canPlantTree(dir))
@@ -285,7 +289,7 @@ public strictfp class Gardener {
      * Tries to plant trees in a hexagonal formation around itself.
      * @throws GameActionException
      */
-    static void tryPlantHexagonal(Direction givenDir) throws GameActionException{
+    void tryPlantHexagonal(Direction givenDir) throws GameActionException{
         for(int i = 0; i< 6; i++){
             Direction dir = givenDir.rotateLeftDegrees(60*i);
             if(rc.canPlantTree(dir))
@@ -297,7 +301,7 @@ public strictfp class Gardener {
      * Tries watering at most 6 nearby bullet trees of own team.
      * @throws GameActionException
      */
-    static void tryWaterHexagonal() throws GameActionException{
+    void tryWaterHexagonal() throws GameActionException{
         TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 2.5, rc.getTeam());
         int minHPTreeID = 0; //arbitrary id number
         float minHP = GameConstants.BULLET_TREE_MAX_HEALTH; //maximal amount of hp
@@ -320,7 +324,7 @@ public strictfp class Gardener {
      * @return true if it is successfully built
      * @throws GameActionException
      */
-    static boolean tryBuild(RobotType robotType, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
+    boolean tryBuild(RobotType robotType, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
         if(rc.getBuildCooldownTurns() > 0 || rc.getTeamBullets() < robotType.bulletCost)
             return false;
         if(rc.canBuildRobot(robotType, dir)){
@@ -355,7 +359,7 @@ public strictfp class Gardener {
      * @param dir
      * @throws GameActionException
      */
-    static void tryBuild(RobotType robotType, Direction dir) throws GameActionException{
+    void tryBuild(RobotType robotType, Direction dir) throws GameActionException{
         tryBuild(robotType,dir,90,6);
     }
 

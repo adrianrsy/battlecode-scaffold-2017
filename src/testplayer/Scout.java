@@ -3,7 +3,11 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Scout {
-    static RobotController rc;
+    RobotController rc;
+    
+    public Scout(RobotController rc){
+        this.rc = rc;
+    }
     
     //Active turn limit
     static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
@@ -30,7 +34,7 @@ public strictfp class Scout {
      *<br>
      */
     
-    static void runScout() throws GameActionException {
+    void runScout() throws GameActionException {
         System.out.println("I'm a scout!");
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();

@@ -73,21 +73,27 @@ public strictfp class RobotPlayer {
         // You can add the missing ones or rewrite this into your own control structure.
         switch (rc.getType()) {
             case ARCHON:
-                Archon.runArchonPhase1();
+                Archon archon = new Archon(rc);
+                archon.runArchonPhase1();
                 break;
             case GARDENER:
-                Gardener.runGardenerPhase1();
+                Gardener gardener = new Gardener(rc);
+                gardener.runGardenerPhase1();
                 break;
             case SOLDIER:
-                Soldier.runSoldierPhase1();
+                Soldier soldier = new Soldier(rc);
+                soldier.runSoldierPhase1();
                 break;
             case LUMBERJACK:
-                Lumberjack.runLumberjack();
+                Lumberjack lumberjack = new Lumberjack(rc);
+                lumberjack.runLumberjack();
                 break;
             case TANK:
-                Tank.runTank();
+                Tank tank = new Tank(rc);
+                tank.runTank();
             case SCOUT:
-                Scout.runScout();
+                Scout scout = new Scout(rc);
+                scout.runScout();
         }
 	}
     

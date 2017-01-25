@@ -3,7 +3,11 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Soldier {
-    static RobotController rc;
+    RobotController rc;
+    
+    public Soldier(RobotController rc){
+        this.rc = rc;
+    }
     
     /**
      * A soldier will identify which archon group it belongs to via checking the three sets of archon locations and 
@@ -25,7 +29,7 @@ public strictfp class Soldier {
      *<br>
      */
     
-    static void runSoldierPhase1() throws GameActionException {
+    void runSoldierPhase1() throws GameActionException {
         System.out.println("I'm a soldier!");
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();

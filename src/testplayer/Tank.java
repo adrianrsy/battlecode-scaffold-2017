@@ -3,7 +3,11 @@ import battlecode.common.*;
 import testplayer.RobotPlayer;
 
 public strictfp class Tank {
-    static RobotController rc;
+    RobotController rc;
+
+    public Tank(RobotController rc){
+        this.rc = rc;
+    }
     
     //Active turn limit
     static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
@@ -34,7 +38,7 @@ public strictfp class Tank {
      *<br>
      */
     
-    static void runTank() throws GameActionException {
+    void runTank() throws GameActionException {
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();
         int archonNum = RobotPlayer.getNearestArchon();
