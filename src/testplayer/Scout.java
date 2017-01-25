@@ -69,6 +69,9 @@ public strictfp class Scout {
                 if(RobotPlayer.isDying()){
                     hidingMode = true;
                 }
+                if(!rc.hasMoved()){
+                    headedTo = RobotPlayer.randomDirection();
+                }
                 Clock.yield();
 
             } catch (Exception e) {

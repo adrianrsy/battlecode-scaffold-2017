@@ -88,7 +88,7 @@ public strictfp class Lumberjack {
                         }
                     }
                 }
-                else{
+                else if (rc.canSenseTree(currentTargetId)){
                     //Current target id is only positive when there is an actual target that was chopped previously
                     TreeInfo targetTree = rc.senseTree(currentTargetId);
                     if (rc.canShake(currentTargetId)) {
