@@ -75,7 +75,7 @@ public strictfp class Lumberjack {
                             rc.shake(treeId);
                             hasShaken = true;
                         }
-                        if (!hasChopped && tree.team != ownTeam && rc.canChop(treeId)) {
+                        if (!hasChopped && !tree.team.equals(ownTeam) && rc.canChop(treeId)) {
                             //If the tree will survive until the next turn, keep it as a target
                             if(tree.getHealth() > GameConstants.LUMBERJACK_CHOP_DAMAGE)
                                 currentTargetId = tree.getID();
@@ -128,7 +128,7 @@ public strictfp class Lumberjack {
                             rc.shake(treeId);
                             hasShaken = true;
                         }
-                        if (!hasChopped && tree.team != ownTeam && rc.canChop(treeId)) {
+                        if (!hasChopped && !tree.team.equals(ownTeam) && rc.canChop(treeId)) {
                             //If the tree will survive until the next turn, keep it as a target
                             if(tree.getHealth() > GameConstants.LUMBERJACK_CHOP_DAMAGE)
                                 currentTargetId = tree.getID();
@@ -141,7 +141,7 @@ public strictfp class Lumberjack {
                         }
                     }
                 }
-                else{
+                else if (rc.canSenseTree(currentTargetId)){
                     //Current target id is only positive when there is an actual target that was chopped previously
                     TreeInfo targetTree = rc.senseTree(currentTargetId);
                     if (rc.canShake(currentTargetId)) {
