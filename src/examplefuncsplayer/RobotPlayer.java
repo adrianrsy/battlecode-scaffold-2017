@@ -78,9 +78,9 @@ public strictfp class RobotPlayer {
             try {
 
                 // Listen for home archon's location
-                int xPos = rc.readBroadcast(0);
-                int yPos = rc.readBroadcast(1);
-                MapLocation archonLoc = new MapLocation(xPos,yPos);
+                //int xPos = rc.readBroadcast(0);
+                //int yPos = rc.readBroadcast(1);
+                //MapLocation archonLoc = new MapLocation(xPos,yPos);
 
                 // Generate a random direction
                 Direction dir = randomDirection();
@@ -114,7 +114,7 @@ public strictfp class RobotPlayer {
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                MapLocation myLocation = rc.getLocation();
+                //MapLocation myLocation = rc.getLocation();
 
                 // See if there are any nearby enemy robots
                 RobotInfo[] robots = rc.senseNearbyRobots(-1, enemy);
@@ -221,7 +221,6 @@ public strictfp class RobotPlayer {
         }
 
         // Now try a bunch of similar angles
-        boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {

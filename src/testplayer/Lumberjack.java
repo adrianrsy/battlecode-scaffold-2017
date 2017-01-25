@@ -44,7 +44,7 @@ public strictfp class Lumberjack {
         Team enemy = ownTeam.opponent();
         int currentTargetId = -1;
         int archonNum = RobotPlayer.getNearestArchon();
-        boolean hasSentDyingBroadcast = false;
+        //boolean hasSentDyingBroadcast = false;
         int turnCount = 0;
 
         while (turnCount < PHASE_1_ACTIVE_TURN_LIMIT) {

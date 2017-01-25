@@ -39,27 +39,32 @@ public strictfp class Scout {
         boolean hidingMode = false;
 
         while (!hidingMode) {
-
-            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
             	// first try to dodge any bullets
             	RobotPlayer.dodge();
             	RobotPlayer.moveTowards(headedTo);
-
-                // MapLocation ownLocation = rc.getLocation();
-
-                // See if there are any nearby enemy robots
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
-                int enemyArchons = 0;
                 for (RobotInfo robot : nearbyEnemies) {
                 	if (robot.type == RobotType.ARCHON) {
-                		enemyArchons++;
-                		// FIXME
-                		rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+enemyArchons, robot.ID);
+                		for(int i =0; i<3; i++){
+                		    int possibleArchonId = rc.readBroadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+i);
+                		    if(possibleArchonId == -1){
+                		        rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+i, robot.getID());
+                		        rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                break;
+                		    }
+                		    if(possibleArchonId == robot.getID()){
+                		        rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                break;
+                		    }
+                		}
                 	}
                 }
-
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                if(RobotPlayer.isDying()){
+                    hidingMode = true;
+                }
                 Clock.yield();
 
             } catch (Exception e) {
@@ -71,6 +76,7 @@ public strictfp class Scout {
         while (hidingMode) {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                RobotPlayer.dodge(4);
             	MapLocation ownLocation = rc.getLocation();
             	TreeInfo treeAtLocation = rc.senseTreeAtLocation(ownLocation);
             	if (treeAtLocation != null && treeAtLocation.team == enemy) {

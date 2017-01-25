@@ -5,26 +5,24 @@ import battlecode.common.*;
  * TODO:
  * 
  * Archon:
- * Finish writing up archon phase 2 description and add channels
- * Write code for archon phase 2 (fairly short, mostly channel management)
+ * done
  * 
  * Gardener:
- * Finish writing up gardener phase 2 description and add channels
- * Write gardener phase 2 code (helper functions for checking planting location might take time)
+ * done
+ * Add purchasing of victory points for pasive gardeners
  * 
  * Lumberjack:
  * done
  * 
  * Soldier:
- * Fix broadcasting and reading of enemy archon channel.
+ * done
+ * Maybe try avoiding friendly fire?
  * 
  * Scout:
- * Fix broadcasting and reading of enemy archon channel.
+ * Add better condition for switching to hiding mode
  * 
  * Tank:
- * Everything. Basic idea is to attempt dodges/ move towards enemy archon if it has been scouted. Continually fire
- * maximum number of shots at closest detectable enemy/ archon if it is detectable unless friendly fire occurs (then reduce
- * shot size)
+ * Change from soldier code, check how body attack works
  * 
  */
 
@@ -48,6 +46,8 @@ public strictfp class RobotPlayer {
     static final int ENEMY_ARCHON_X_CHANNEL = 10;
     static final int ENEMY_ARCHON_Y_CHANNEL = 11;
     static final int GARDENER_TURN_COUNTER = 12;
+    static final int GARDENER_MAX_DIST_CHANNEL = 13;
+    static final int GARDENER_MAX_DIST_ID_CHANNEL = 14;
     
     static final int TARGET_IS_TREE = 1;
     static final int TARGET_IS_ROBOT = 2;
@@ -85,7 +85,7 @@ public strictfp class RobotPlayer {
                 Lumberjack.runLumberjack();
                 break;
             case TANK:
-                //Tank.runTank();
+                Tank.runTank();
             case SCOUT:
                 Scout.runScout();
         }
@@ -111,6 +111,12 @@ public strictfp class RobotPlayer {
             }
         }
     	return archonNum;
+    }
+    
+    static MapLocation getArchonLoc(int archonNum) throws GameActionException{
+        float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+archonNum)) / CONVERSION_OFFSET;
+        float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+archonNum)) / CONVERSION_OFFSET;
+        return new MapLocation(archonX, archonY);
     }
     
     static Direction getArchonDirection(int archonNum) throws GameActionException{
@@ -326,8 +332,8 @@ public strictfp class RobotPlayer {
      */
     static boolean trySidestep(BulletInfo bullet) throws GameActionException{
         Direction towards = bullet.getDir();
-        MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
-        MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
+        //MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
+        //MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
         return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
     }
     
@@ -339,10 +345,20 @@ public strictfp class RobotPlayer {
     static boolean tryAttackEnemyArchon() throws GameActionException {
     	for (int i=1; i<=MAX_ARCHONS; i++) {
     		int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
-    		if (enemyArchonId != 0) {
+    		if (enemyArchonId != 0 && rc.canSenseRobot(enemyArchonId)) {
         		try {
         			RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
-        			if (rc.canFireSingleShot()) {
+        			if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
+        			    if(rc.canFirePentadShot()){
+        			        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
+        			    }
+        			}
+        			else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
+                        if(rc.canFireTriadShot()){
+                            rc.fireTriadShot(rc.getLocation().directionTo(enemyArchon.location));
+                        }
+                    }
+        			else if (rc.canFireSingleShot()) {
         				rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
         			}
         			return true;

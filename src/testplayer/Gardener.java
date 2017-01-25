@@ -68,7 +68,7 @@ public strictfp class Gardener {
                 }
                 Clock.yield();
             }catch (Exception e) {
-                System.out.println("Archon Exception");
+                System.out.println("Gardener Exception");
                 e.printStackTrace();
             } 
         }
@@ -80,6 +80,7 @@ public strictfp class Gardener {
         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
         while(turnCount < MOVE_AWAY_TURNS){
             RobotPlayer.moveTowards(headedTo.opposite());
+            turnCount ++;
             Clock.yield();
         }
         while(true){
@@ -88,7 +89,7 @@ public strictfp class Gardener {
                 tryWaterHexagonal();
                 Clock.yield();
             }catch (Exception e) {
-                System.out.println("Archon Exception");
+                System.out.println("Gardener Exception");
                 e.printStackTrace();
             } 
         }
@@ -98,7 +99,7 @@ public strictfp class Gardener {
      * For Phase 2 <br>
      * A gardener will move away from the general direction of the archon until it finds a place where it can 
      * plant at least 4 trees and there is a two unit wide open space after at least 2 of those planned locations.<br>
-     * Every 1st of 3 turns (maintained by a channel incremented by the archon), each of these gardeners (unsettled) will 
+     * Every 2nd of 3 turns (maintained by a channel incremented by the archon), each of these gardeners (unsettled) will 
      * read if they are the farthest gardener from their own archon by reading a channel where gardeners post their 
      * distance and id from the archon, if it matches their id, they will serve as a tank builder.<br>
      * A tank builder will try to build tanks while continuing to move away from the archon.<br>
@@ -106,7 +107,7 @@ public strictfp class Gardener {
      * around itself and water the one with the lowest hp.<br>
      * If it has not yet settled down, it will attempt to build scouts/soldiers in the opposite direction of the 
      * archon's location with respect to its current location.<br>
-     * Every 2nd of 3 turns, if it is not yet dying, the gardeners will account which is the farthest from the archon
+     * Every 1st of 3 turns, if it is not yet dying, the gardeners will account which is the farthest from the archon
      * by posting a distance and its id if its distance is greater than the previous distances.<br>
      * Every 3rd of 3 turns, the first gardener to read the channel will clear the channels used to share those messages.<br>
      * If it is dying at any point, it signals that it is dying by decrementing the gardener counter.<br>
@@ -114,9 +115,164 @@ public strictfp class Gardener {
      * @throws GameActionException
      */
     static void runGardenerPhase2(int archonNum) throws GameActionException{
-    
+        MapLocation archonLoc = RobotPlayer.getArchonLoc(archonNum);
+        Direction headedTo = rc.getLocation().directionTo(archonLoc).opposite();
+        boolean hasBroadcastedDying = false;
+        boolean isTankBuilder = false;
+        boolean hasSettled = false;
+        Direction plantDir = Direction.getEast();
+        while(!hasSettled && !hasBroadcastedDying){
+            try{
+                headedTo = rc.getLocation().directionTo(archonLoc).opposite();
+                RobotPlayer.dodge(4);
+                RobotPlayer.tryMoveInGeneralDirection(headedTo.opposite(), 90, 9);
+                int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
+                if(isTankBuilder){
+                    tryBuild(RobotType.TANK,headedTo);
+                }
+                else{
+                    SettleDirection settle = canSettle();
+                    if(settle.getCanSettle()){
+                        hasSettled = true;
+                        plantDir = settle.getDir();
+                        int currentLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                        rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentLivingGardeners -1);
+                    }
+                    else if(RobotPlayer.isDying()){
+                        hasBroadcastedDying = true;
+                        int currentLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                        rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentLivingGardeners -1);
+                    }
+                    else{
+                        if(Math.random()<0.6){
+                            tryBuild(RobotType.SOLDIER,headedTo);
+                        }
+                        else{
+                            tryBuild(RobotType.SCOUT,headedTo);
+                        }
+                    }
+                }
+                
+                if(gardenerTurnCounter == 1){
+                    float archonDist = rc.getLocation().distanceTo(RobotPlayer.getArchonLoc(archonNum));
+                    float currentLargestDist = (float) rc.readBroadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum) / RobotPlayer.CONVERSION_OFFSET;
+                    if(archonDist > currentLargestDist){
+                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, (int)(archonDist * RobotPlayer.CONVERSION_OFFSET));
+                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum, rc.getID());
+                    }
+                }
+                if(gardenerTurnCounter == 2){
+                    int farthestId = rc.readBroadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum);
+                    if (farthestId == rc.getID())
+                        isTankBuilder = true;
+                    else
+                        isTankBuilder = false;   
+                }
+                if(gardenerTurnCounter == 0){
+                    if(rc.readBroadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum) != -1){
+                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, -1);
+                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum, -1);
+                    }
+                }
+                Clock.yield();
+            }catch(Exception e) {
+                System.out.println("Gardener Exception");
+                e.printStackTrace();
+            } 
+        }
+        if(hasSettled){
+            while(true){
+                try{
+                    tryPlantHexagonal(plantDir);
+                    tryWaterHexagonal();
+                    Clock.yield();
+                }catch (Exception e) {
+                    System.out.println("Gardener Exception");
+                    e.printStackTrace();
+                } 
+            }
+        }
+        else{
+            int turnCount = 0;
+            while(turnCount < MOVE_AWAY_TURNS){
+                RobotPlayer.tryMoveInGeneralDirection(headedTo, 110, 11);
+                turnCount ++;
+                Clock.yield();
+            }
+            turnCount = 0;
+            while(true){
+                turnCount ++;
+                if(turnCount%10 ==0){
+                    float vcost = rc.getVictoryPointCost();
+                    for(int i=0; i<10; i++){
+                        if(rc.getTeamBullets() > vcost){
+                            rc.donate(vcost);
+                        }
+                    }
+                }
+                try{
+                    tryPlantHexagonal();
+                    tryWaterHexagonal();
+                    Clock.yield();
+                }catch (Exception e) {
+                    System.out.println("Gardener Exception");
+                    e.printStackTrace();
+                } 
+            }
+        }
+        
     }
     
+    /**
+     * 
+     * @return the direction at which to start planting so at least 4 will fit
+     * @throws GameActionException
+     */
+    static SettleDirection canSettle() throws GameActionException{
+        Direction randomDir = RobotPlayer.randomDirection();
+        int plantableTrees = 0;
+        int hasSpace = 0;
+        for(int i = 0; i<6; i++){
+            Direction plantDir = randomDir.rotateLeftDegrees(60*i);
+            if(rc.canPlantTree(plantDir)){
+                plantableTrees ++;
+                if(!rc.isLocationOccupied(rc.getLocation().add(plantDir, 4)) &&
+                   !rc.isLocationOccupied(rc.getLocation().add(plantDir, 5))){
+                    hasSpace ++;
+                }
+            }
+        }
+        if(plantableTrees < 4){
+            return new SettleDirection(false,randomDir);
+        }
+        else if(hasSpace <2){
+            return new SettleDirection(false,randomDir);
+        }
+        else{
+            return new SettleDirection(true, randomDir);
+        }
+    }
+    
+    private static class SettleDirection{
+        boolean canSettle;
+        Direction dir;
+        
+        public SettleDirection(boolean canSettle, Direction dir){
+            this.canSettle = canSettle;
+            this.dir = dir;
+        }
+        public boolean getCanSettle(){
+            return canSettle;
+        }
+        public Direction getDir(){
+            return dir;
+        }
+    }
+    
+    /**
+     * Tries to plant trees in a hexagonal formation around itself.
+     * @throws GameActionException
+     */
     static void tryPlantHexagonal() throws GameActionException{
         for(int i = 0; i< 6; i++){
             Direction dir = Direction.getEast().rotateLeftDegrees(60*i);
@@ -125,6 +281,22 @@ public strictfp class Gardener {
         }
     }
     
+    /**
+     * Tries to plant trees in a hexagonal formation around itself.
+     * @throws GameActionException
+     */
+    static void tryPlantHexagonal(Direction givenDir) throws GameActionException{
+        for(int i = 0; i< 6; i++){
+            Direction dir = givenDir.rotateLeftDegrees(60*i);
+            if(rc.canPlantTree(dir))
+                rc.plantTree(dir);
+        }
+    }
+    
+    /**
+     * Tries watering at most 6 nearby bullet trees of own team.
+     * @throws GameActionException
+     */
     static void tryWaterHexagonal() throws GameActionException{
         TreeInfo[] nearbyTeamTrees = rc.senseNearbyTrees((float) 2.5, rc.getTeam());
         int minHPTreeID = 0; //arbitrary id number
@@ -139,6 +311,15 @@ public strictfp class Gardener {
             rc.water(minHPTreeID);
     }
     
+    /**
+     * Tries to build a certain robot type around a certain direction
+     * @param robotType
+     * @param dir
+     * @param degreeOffset
+     * @param checksPerSide
+     * @return true if it is successfully built
+     * @throws GameActionException
+     */
     static boolean tryBuild(RobotType robotType, Direction dir, float degreeOffset, int checksPerSide) throws GameActionException{
         if(rc.getBuildCooldownTurns() > 0 || rc.getTeamBullets() < robotType.bulletCost)
             return false;
@@ -168,6 +349,12 @@ public strictfp class Gardener {
         return false;
     }
     
+    /**
+     * Tries to build a certain robot type around a certain direction
+     * @param robotType
+     * @param dir
+     * @throws GameActionException
+     */
     static void tryBuild(RobotType robotType, Direction dir) throws GameActionException{
         tryBuild(robotType,dir,90,6);
     }

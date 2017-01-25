@@ -86,9 +86,9 @@ public strictfp class Archon {
             archonNum = 3;
         }
         
-        int numRoundsRemaining;
+        //int numRoundsRemaining;
         if(archonNum == 1){
-            numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
+            //numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
             //rc.broadcast(RobotPlayer.ROUND_NUMBER_CHANNEL, numRoundsRemaining);
         }
         else{
@@ -178,6 +178,8 @@ public strictfp class Archon {
      * It will try to build gardeners whenever the number of unsettled gardeners drops below a limit 
      * (using the living gardener channel), and each gardener above the limit halves the chance of it 
      * continuing to build gardeners.<br>
+     * Once number of active gardeners goes over the limit, it will try to purchase 10 victory points
+     * whenever it decides not to attempt building gardeners.<br>
      * <br>
      * 
      * Channels:<br>
@@ -189,11 +191,32 @@ public strictfp class Archon {
     static void runArchonPhase2(int archonNum, Direction headedTo) throws GameActionException{
         rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
         rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, 1);
+        int currentGardenerTurn = 1;
         while(true){
-            int numLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
-            if(numLivingGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
-                tryHireGardener(headedTo.opposite(), 110, 11);
-            }
+            try{
+                int numLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                if(numLivingGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
+                    tryHireGardener(headedTo.opposite(), 110, 11);
+                }
+                else{
+                    int diff = numLivingGardeners - PHASE_2_ACTIVE_GARDENER_LIMIT;
+                    if(Math.random() < Math.pow(0.5, diff)){
+                        tryHireGardener(headedTo.opposite(), 110, 11);
+                    }
+                    else{
+                        float victoryPointPrice = rc.getVictoryPointCost();
+                        if(rc.getTeamBullets() > 10 * victoryPointPrice){
+                            rc.donate(10* victoryPointPrice);
+                        }
+                    }
+                currentGardenerTurn = (currentGardenerTurn + 1)%3;
+                rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, currentGardenerTurn);
+                Clock.yield();
+                }
+            }catch (Exception e) {
+                System.out.println("Archon Exception");
+                e.printStackTrace();
+                } 
         }
     }
     
