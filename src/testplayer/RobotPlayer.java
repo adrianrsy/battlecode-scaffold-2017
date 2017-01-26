@@ -6,13 +6,17 @@ import battlecode.common.*;
  * Add limit for number of scouts
  * Improve archon seeking for attacking units (can't seem to read location?)
  * Fix lumberjack (it doesn't stay to attack trees)
+ * Movement fails really badly if they try going towards a fixed direction then get stuck
+ * Purchasing of victory points does not seem to be working
+ * 
+ * 
  * 
  * Archon:
  * done
  * 
  * Gardener:
  * done
- * Add purchasing of victory points for pasive gardeners
+ * Add purchasing of victory points for passive gardeners
  * 
  * Lumberjack:
  * done
