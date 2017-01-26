@@ -3,6 +3,9 @@ import battlecode.common.*;
 
 /*
  * TODO:
+ * Add limit for number of scouts
+ * Improve archon seeking for attacking units (can't seem to read location?)
+ * Fix lumberjack (it doesn't stay to attack trees)
  * 
  * Archon:
  * done
@@ -201,7 +204,9 @@ public strictfp class RobotPlayer {
      * @throws GameActionException
      */
     static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
-
+        if(rc.hasMoved()){
+            return false;
+        }
         // First, try intended direction
         if (!rc.hasMoved() && rc.canMove(dir)) {
             rc.move(dir);
@@ -237,6 +242,9 @@ public strictfp class RobotPlayer {
      * @throws GameActionException 
      */
     static boolean tryMoveInGeneralDirection(Direction dir, float degreeOffset, int numChecks) throws GameActionException{
+        if(rc.hasMoved()){
+            return false;
+        }
         int attempts = 0;
         while(attempts < numChecks){
             float multiplier = (float) (2*Math.random()) - 1;
@@ -308,26 +316,35 @@ public strictfp class RobotPlayer {
      * Attempts to dodge incoming bullets that it is in the line of fire from
      * @throws GameActionException
      */
-    static void dodge(RobotController rc) throws GameActionException {
+    static boolean dodge(RobotController rc) throws GameActionException {
+        if(rc.hasMoved()){
+            return false;
+        }
         BulletInfo[] bullets = rc.senseNearbyBullets();
         for (BulletInfo bi : bullets) {
             if (willCollideWithMe(bi, rc)) {
                 trySidestep(bi, rc);
             }
         }
+        return true;
     }
     
     /**
      * Attempts to dodge incoming bullets that it is in the line of fire from within a certain distance
      * @throws GameActionException
      */
-    static void dodge(float dist, RobotController rc) throws GameActionException {
+    static boolean dodge(float dist, RobotController rc) throws GameActionException {
+        if(rc.hasMoved()){
+            return false;
+        }
         BulletInfo[] bullets = rc.senseNearbyBullets(dist);
         for (BulletInfo bi : bullets) {
             if (willCollideWithMe(bi, rc)) {
                 trySidestep(bi, rc);
             }
         }
+        return true;
+        
     }
     
     /**
@@ -343,37 +360,45 @@ public strictfp class RobotPlayer {
         return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
     }
     
+    static MapLocation enemyArchonLocation(RobotController rc) throws GameActionException{
+        for (int i = 1; i<= MAX_ARCHONS; i++){
+            int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*3 + i);
+            if(enemyArchonId != -1){
+                float archonX = (float) rc.readBroadcastFloat(ENEMY_ARCHON_X_CHANNEL*3+i) / CONVERSION_OFFSET;
+                float archonY = (float) rc.readBroadcastFloat(ENEMY_ARCHON_Y_CHANNEL*3+i) / CONVERSION_OFFSET;
+                return new MapLocation(archonX,archonY);
+            }
+        }
+        return rc.getLocation().add(randomDirection());
+    }
+    
     /**
      * Tries to attack an enemy archon based on the enemy archon ids broadcasted
      * @return a boolean of whether an attack was tried
      * @throws GameActionException
      */
     static boolean tryAttackEnemyArchon(RobotController rc) throws GameActionException {
-    	for (int i=1; i<=MAX_ARCHONS; i++) {
+        if(rc.hasAttacked()){
+            return false;
+        }
+    	for (int i=1; i<=3; i+=1) {
     		int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
-    		if (enemyArchonId != 0 && rc.canSenseRobot(enemyArchonId)) {
-        		try {
-        			RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
-        			if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
-        			    if(rc.canFirePentadShot()){
-        			        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
-        			    }
-        			}
-        			else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
-                        if(rc.canFireTriadShot()){
-                            rc.fireTriadShot(rc.getLocation().directionTo(enemyArchon.location));
-                        }
+    		if (enemyArchonId != -1 && rc.canSenseRobot(enemyArchonId)) {
+    			RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
+    			if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
+    			    if(rc.canFirePentadShot()){
+    			        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
+    			    }
+    			}
+    			else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
+                    if(rc.canFireTriadShot()){
+                        rc.fireTriadShot(rc.getLocation().directionTo(enemyArchon.location));
                     }
-        			else if (rc.canFireSingleShot()) {
-        				rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
-        			}
-        			return true;
-        		} catch (GameActionException e) {
-        			// do nothing
-        		}
-    		} else {
-    			// no broadcasted locations for >=i yet; don't do anything
-    			break;
+                }
+    			else if (rc.canFireSingleShot()) {
+    				rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
+    			}
+    			return true;
     		}
     	}
     	return false;

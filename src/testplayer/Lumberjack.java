@@ -52,6 +52,7 @@ public strictfp class Lumberjack {
         int turnCount = 0;
 
         while (turnCount < PHASE_1_ACTIVE_TURN_LIMIT) {
+            System.out.println("I am a lumberjack on turn " + turnCount);
             try {
                 int targetType = rc.readBroadcast(RobotPlayer.TARGET_TYPE*3 + archonNum);
                 int targetTreeId = rc.readBroadcast(RobotPlayer.TARGET_ID*3 + archonNum);
@@ -60,22 +61,19 @@ public strictfp class Lumberjack {
                 if(targetType == 1 && rc.canSenseTree(targetTreeId)){
                     RobotPlayer.moveTowards(rc.senseTree(targetTreeId).getLocation(), rc);
                 }
-                else{
-                    RobotPlayer.moveTowards(RobotPlayer.getArchonDirection(archonNum), rc);
-                }
                 
                 //List of trees that the lumberjack can chop/shake
-                TreeInfo[] trees = rc.senseNearbyTrees(RobotType.LUMBERJACK.bodyRadius+GameConstants.INTERACTION_DIST_FROM_EDGE);
+                TreeInfo[] trees = rc.senseNearbyTrees();
                 if(currentTargetId < 0){
                     boolean hasShaken = false;
                     boolean hasChopped = false;
                     for (TreeInfo tree : trees) {
-                        int treeId = tree.ID;
+                        int treeId = tree.getID();
                         if (!hasShaken && rc.canShake(treeId)) {
                             rc.shake(treeId);
                             hasShaken = true;
                         }
-                        if (!hasChopped && !tree.team.equals(ownTeam) && rc.canChop(treeId)) {
+                        if (!hasChopped && !tree.getTeam().equals(ownTeam) && rc.canChop(treeId)) {
                             //If the tree will survive until the next turn, keep it as a target
                             if(tree.getHealth() > GameConstants.LUMBERJACK_CHOP_DAMAGE)
                                 currentTargetId = tree.getID();
@@ -89,8 +87,10 @@ public strictfp class Lumberjack {
                     }
                 }
                 else if (rc.canSenseTree(currentTargetId)){
+                    
                     //Current target id is only positive when there is an actual target that was chopped previously
                     TreeInfo targetTree = rc.senseTree(currentTargetId);
+                    RobotPlayer.moveTowards(targetTree.getLocation(), rc);
                     if (rc.canShake(currentTargetId)) {
                         rc.shake(currentTargetId);
                     }
@@ -114,21 +114,22 @@ public strictfp class Lumberjack {
         while(turnCount >=PHASE_1_ACTIVE_TURN_LIMIT){
             
             try {
+                System.out.println("I am a lumberjack on turn " + turnCount);
                 RobotPlayer.dodge(4, rc); //based on max bullet speed
                 
                 //List of trees that the lumberjack can chop/shake
-                RobotPlayer.tryMove(RobotPlayer.getArchonDirection(archonNum), 110, 11);
+                //RobotPlayer.tryMove(RobotPlayer.getArchonDirection(archonNum), 110, 11);
                 TreeInfo[] trees = rc.senseNearbyTrees(RobotType.LUMBERJACK.bodyRadius+GameConstants.INTERACTION_DIST_FROM_EDGE);
                 if(currentTargetId < 0){
                     boolean hasShaken = false;
                     boolean hasChopped = false;
                     for (TreeInfo tree : trees) {
-                        int treeId = tree.ID;
+                        int treeId = tree.getID();
                         if (!hasShaken && rc.canShake(treeId)) {
                             rc.shake(treeId);
                             hasShaken = true;
                         }
-                        if (!hasChopped && !tree.team.equals(ownTeam) && rc.canChop(treeId)) {
+                        if (!hasChopped && !tree.getTeam().equals(ownTeam) && rc.canChop(treeId)) {
                             //If the tree will survive until the next turn, keep it as a target
                             if(tree.getHealth() > GameConstants.LUMBERJACK_CHOP_DAMAGE)
                                 currentTargetId = tree.getID();
@@ -144,6 +145,7 @@ public strictfp class Lumberjack {
                 else if (rc.canSenseTree(currentTargetId)){
                     //Current target id is only positive when there is an actual target that was chopped previously
                     TreeInfo targetTree = rc.senseTree(currentTargetId);
+                    RobotPlayer.moveTowards(targetTree.getLocation(), rc);
                     if (rc.canShake(currentTargetId)) {
                         rc.shake(currentTargetId);
                     }

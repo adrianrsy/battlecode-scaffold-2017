@@ -40,8 +40,8 @@ public strictfp class Soldier {
         while (true) {
             try {
             	RobotPlayer.dodge(rc);
+            	RobotPlayer.moveTowards(RobotPlayer.enemyArchonLocation(rc), rc);
             	RobotPlayer.moveTowards(headedTo, rc);
-            	
             	RobotPlayer.tryAttackEnemyArchon(rc);
                 MapLocation ownLocation = rc.getLocation();
                 
