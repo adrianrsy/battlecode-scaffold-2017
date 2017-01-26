@@ -46,7 +46,8 @@ public strictfp class Scout {
             try {
             	// first try to dodge any bullets
             	RobotPlayer.dodge(rc);
-            	RobotPlayer.moveTowards(headedTo, rc);
+            	RobotPlayer.moveTowards(RobotPlayer.enemyArchonLocation(rc), rc);
+                RobotPlayer.moveTowards(headedTo, rc);
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
                 for (RobotInfo robot : nearbyEnemies) {
                 	if (robot.type == RobotType.ARCHON) {
