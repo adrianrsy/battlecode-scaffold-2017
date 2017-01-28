@@ -10,7 +10,10 @@ public strictfp class Gardener {
     }
     
     //Active turn limit
-     int PHASE_1_ACTIVE_TURN_LIMIT = 60;
+    int PHASE_1_ACTIVE_TURN_LIMIT = 60;
+     
+    //Scout limit
+    static int LIVING_SCOUT_LIMIT = 15;
     
     //Turns it will move away until inactive
     static int MOVE_AWAY_TURNS = 5;
@@ -61,7 +64,11 @@ public strictfp class Gardener {
                     tryBuild(RobotType.LUMBERJACK,headedTo.opposite());
                 }
                 else if(randomVar < 0.8){
-                    tryBuild(RobotType.SCOUT, headedTo.opposite());
+                    int numScouts = rc.readBroadcast(RobotPlayer.LIVING_SCOUT_CHANNEL * 3 + archonNum);
+                    if(numScouts < LIVING_SCOUT_LIMIT && tryBuild(RobotType.SCOUT, headedTo.opposite())){
+                        
+                        rc.broadcast(RobotPlayer.LIVING_SCOUT_CHANNEL*3 + archonNum, numScouts + 1);
+                    }
                 }
                 else{
                     tryBuild(RobotType.SOLDIER, headedTo.opposite());
@@ -359,8 +366,8 @@ public strictfp class Gardener {
      * @param dir
      * @throws GameActionException
      */
-    void tryBuild(RobotType robotType, Direction dir) throws GameActionException{
-        tryBuild(robotType,dir,90,6);
+    boolean tryBuild(RobotType robotType, Direction dir) throws GameActionException{
+         return tryBuild(robotType,dir,90,6);
     }
 
 

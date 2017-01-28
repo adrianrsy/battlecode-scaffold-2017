@@ -9,12 +9,6 @@ public strictfp class Scout {
         this.rc = rc;
     }
     
-    //Active turn limit
-    static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
-    
-    //Turns it will move away until inactive
-    static int MOVE_AWAY_TURNS = 5;
-    
     /**
      * A scout will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>
@@ -69,6 +63,9 @@ public strictfp class Scout {
                 }
                 if(RobotPlayer.isDying()){
                     hidingMode = true;
+                    int numScouts = rc.readBroadcast(RobotPlayer.LIVING_SCOUT_CHANNEL * 3 + archonNum);
+                    rc.broadcast(RobotPlayer.LIVING_SCOUT_CHANNEL*3 + archonNum, numScouts - 1);
+
                 }
                 if(!rc.hasMoved()){
                     headedTo = RobotPlayer.randomDirection();

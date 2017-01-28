@@ -9,12 +9,6 @@ public strictfp class Tank {
         this.rc = rc;
     }
     
-    //Active turn limit
-    static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
-    
-    //Turns it will move away until inactive
-    static int MOVE_AWAY_TURNS = 5;
-    
     /**
      * TODO:
      * 

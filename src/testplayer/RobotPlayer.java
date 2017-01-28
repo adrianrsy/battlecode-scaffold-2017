@@ -55,6 +55,7 @@ public strictfp class RobotPlayer {
     static final int GARDENER_TURN_COUNTER = 12;
     static final int GARDENER_MAX_DIST_CHANNEL = 13;
     static final int GARDENER_MAX_DIST_ID_CHANNEL = 14;
+    static final int LIVING_SCOUT_CHANNEL = 15;
     
     static final int TARGET_IS_TREE = 1;
     static final int TARGET_IS_ROBOT = 2;
