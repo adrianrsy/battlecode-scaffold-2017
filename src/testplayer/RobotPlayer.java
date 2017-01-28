@@ -65,6 +65,7 @@ public strictfp class RobotPlayer {
     static final double DYING_TANK_HP_THRESHOLD = 0.19 * RobotType.TANK.maxHealth;
     static final double DYING_SCOUT_HP_THRESHOLD = 0.19 * RobotType.SCOUT.maxHealth;
     static final int MAX_ARCHONS = 3;
+    static final int VICTORY_POINTS_TO_WIN = 1000;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -114,8 +115,8 @@ public strictfp class RobotPlayer {
         int archonNum = 1;
         float min_distance = Float.MAX_VALUE;
         for(int i = 1; i <= rc.getInitialArchonLocations(rc.getTeam()).length; i++){
-            float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+i)) / CONVERSION_OFFSET;
-            float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+i)) / CONVERSION_OFFSET;
+            float archonX = rc.readBroadcastFloat(ARCHON_LOCATION_X_CHANNEL*3+i);
+            float archonY = rc.readBroadcastFloat(ARCHON_LOCATION_Y_CHANNEL*3+i);
             MapLocation archonLoc = new MapLocation(archonX, archonY);
             float dist = loc.distanceTo(archonLoc);
             if(dist < min_distance){
@@ -127,13 +128,13 @@ public strictfp class RobotPlayer {
     }
     
     static MapLocation getArchonLoc(int archonNum) throws GameActionException{
-        float archonX = ((float) rc.readBroadcast(ARCHON_LOCATION_X_CHANNEL*3+archonNum)) / CONVERSION_OFFSET;
-        float archonY = ((float) rc.readBroadcast(ARCHON_LOCATION_Y_CHANNEL*3+archonNum)) / CONVERSION_OFFSET;
+        float archonX = rc.readBroadcastFloat(ARCHON_LOCATION_X_CHANNEL*3+archonNum);
+        float archonY = rc.readBroadcastFloat(ARCHON_LOCATION_Y_CHANNEL*3+archonNum);
         return new MapLocation(archonX, archonY);
     }
     
     static Direction getArchonDirection(int archonNum) throws GameActionException{
-        float headedToRadians = ((float) rc.readBroadcast(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum))/CONVERSION_OFFSET;
+        float headedToRadians = rc.readBroadcastFloat(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum);
         return new Direction(headedToRadians);
     }
     
@@ -368,8 +369,8 @@ public strictfp class RobotPlayer {
         for (int i = 1; i<= MAX_ARCHONS; i++){
             int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*3 + i);
             if(enemyArchonId != -1){
-                float archonX = (float) rc.readBroadcastFloat(ENEMY_ARCHON_X_CHANNEL*3+i) / CONVERSION_OFFSET;
-                float archonY = (float) rc.readBroadcastFloat(ENEMY_ARCHON_Y_CHANNEL*3+i) / CONVERSION_OFFSET;
+                float archonX = rc.readBroadcastFloat(ENEMY_ARCHON_X_CHANNEL*3+i);
+                float archonY = rc.readBroadcastFloat(ENEMY_ARCHON_Y_CHANNEL*3+i);
                 return new MapLocation(archonX,archonY);
             }
         }
