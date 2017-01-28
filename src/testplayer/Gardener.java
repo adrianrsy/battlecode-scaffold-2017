@@ -166,9 +166,9 @@ public strictfp class Gardener {
                 
                 if(gardenerTurnCounter == 1){
                     float archonDist = rc.getLocation().distanceTo(RobotPlayer.getArchonLoc(archonNum));
-                    float currentLargestDist = (float) rc.readBroadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum) / RobotPlayer.CONVERSION_OFFSET;
+                    float currentLargestDist = rc.readBroadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum);
                     if(archonDist > currentLargestDist){
-                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, (int)(archonDist * RobotPlayer.CONVERSION_OFFSET));
+                        rc.broadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, archonDist);
                         rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum, rc.getID());
                     }
                 }

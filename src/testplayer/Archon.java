@@ -118,11 +118,11 @@ public strictfp class Archon {
         int turnCount = 0;
         while(true){
             try{
-                rc.broadcast(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, (int) (headedTo.radians*RobotPlayer.CONVERSION_OFFSET));
+                rc.broadcastFloat(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, headedTo.radians);
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo, rc);
                 MapLocation loc = rc.getLocation();
-                rc.broadcast(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, (int) (loc.x*RobotPlayer.CONVERSION_OFFSET));
-                rc.broadcast(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, (int) (loc.y*RobotPlayer.CONVERSION_OFFSET));
+                rc.broadcastFloat(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, loc.x);
+                rc.broadcastFloat(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, loc.y);
                 if(!hasMoved){
                     TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
                     boolean obstacleIsTree = false;
@@ -132,8 +132,8 @@ public strictfp class Archon {
                            loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                            loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
                             if(rc.canShake(treeLoc)) rc.shake(treeLoc);
-                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*RobotPlayer.CONVERSION_OFFSET));
-                            rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*RobotPlayer.CONVERSION_OFFSET));
+                            rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, treeLoc.x);
+                            rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, treeLoc.y);
                             rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_TREE);
                             rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyTree.getID());
                             obstacleIsTree = true;
@@ -147,8 +147,8 @@ public strictfp class Archon {
                             if(!nearbyRobot.getTeam().equals(rc.getTeam()) &&
                                loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
                                loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
-                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, (int) (treeLoc.x*RobotPlayer.CONVERSION_OFFSET));
-                                rc.broadcast(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, (int) (treeLoc.y*RobotPlayer.CONVERSION_OFFSET));
+                                rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, treeLoc.x);
+                                rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, treeLoc.y);
                                 rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_ROBOT);
                                 rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyRobot.getID());
                                 break;
@@ -200,6 +200,11 @@ public strictfp class Archon {
         int currentGardenerTurn = 1;
         while(true){
             try{
+                // if we have enough bullets to donate in order to win, donate them
+                float bulletsToWin = RobotPlayer.VICTORY_POINTS_TO_WIN*rc.getVictoryPointCost();
+                if (rc.getTeamBullets() >= bulletsToWin) {
+                    rc.donate(bulletsToWin);
+                }
                 int numLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
                 if(numLivingGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
                     tryHireGardener(headedTo.opposite(), 110, 11);

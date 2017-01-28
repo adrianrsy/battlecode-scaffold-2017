@@ -75,13 +75,13 @@ public strictfp class Tank {
                                 int possibleArchonId = rc.readBroadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 +i);
                                 if(possibleArchonId == -1){
                                     rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 + i, robot.getID());
-                                    rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
-                                    rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                    rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, robot.getLocation().x);
+                                    rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, robot.getLocation().y);
                                     break;
                                 }
                                 if(possibleArchonId == robot.getID()){
-                                    rc.broadcast(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, (int) (robot.getLocation().x * RobotPlayer.CONVERSION_OFFSET));
-                                    rc.broadcast(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, (int) (robot.getLocation().y * RobotPlayer.CONVERSION_OFFSET));
+                                    rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i, robot.getLocation().x);
+                                    rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i, robot.getLocation().y);
                                     break;
                                 }
                             }
