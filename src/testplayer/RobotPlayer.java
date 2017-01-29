@@ -3,35 +3,15 @@ import battlecode.common.*;
 
 /*
  * TODO:
- * Add limit for number of scouts (needs to be fixed)
- * If enemy archon dies, needs to give new target for robots.
- * Make lumberjacks during phase 2 just to cut down gardener clumps?
- * Make gardeners move away from archon before planting tree clusters.
- * 
+ * Add limit for number of scouts (needs to be fixed) (not yet tested)
+ * If enemy archon dies, needs to give new target for robots. (not yet implemented)
+ * Make lumberjacks during phase 2 just to cut down gardener clumps? (not yet implemented)
+ * Make gardeners move away from archon before planting tree clusters. (implemented for phase 1, doesn't seem to work very well 
+ * for phase 2)
+ * Make gardeners move away from closest friendly robot (at least 2 unites edge to edge) before trying to plant trees down
  * Fix lumberjack (it doesn't stay to attack trees)
  * Movement fails really badly if they try going towards a fixed direction then get stuck
  * Purchasing of victory points does not seem to be working
- * 
- * Archon:
- * done
- * 
- * Gardener:
- * done
- * Add purchasing of victory points for passive gardeners
- * 
- * Lumberjack:
- * done
- * 
- * Soldier:
- * done
- * Maybe try avoiding friendly fire?
- * 
- * Scout:
- * Add better condition for switching to hiding mode
- * 
- * Tank:
- * Change from soldier code, check how body attack works
- * 
  */
 
 public strictfp class RobotPlayer {
