@@ -29,7 +29,7 @@ public strictfp class Soldier {
      *<br>
      */
     
-    void runSoldierPhase1() throws GameActionException {
+    void runSoldier() throws GameActionException {
         System.out.println("I'm a soldier!");
         Team ownTeam = rc.getTeam();
         Team enemy = ownTeam.opponent();

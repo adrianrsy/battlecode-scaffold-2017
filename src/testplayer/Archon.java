@@ -102,7 +102,10 @@ public strictfp class Archon {
         Direction headedTo;
         switch(archonNum){
         case 1:
-            headedTo = NORTH_EAST;
+            if(Team.A.equals(rc.getTeam())) 
+                headedTo = SOUTH_WEST;
+            else
+                headedTo = NORTH_EAST;
             break;
         case 2:
             headedTo = SOUTH_EAST;
@@ -118,6 +121,7 @@ public strictfp class Archon {
         int turnCount = 0;
         while(true){
             try{
+                System.out.println("This is archon " + archonNum + "a the start of turn " + turnCount);
                 rc.broadcastFloat(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, headedTo.radians);
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo, rc);
                 MapLocation loc = rc.getLocation();
@@ -158,7 +162,7 @@ public strictfp class Archon {
                 }
                 int numActiveGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
                 if (numActiveGardeners < PHASE_1_ACTIVE_GARDENER_LIMIT){
-                    boolean hasHired = tryHireGardener(headedTo.opposite(), 90, 6);
+                    boolean hasHired = tryHireInGeneralDirection(headedTo.opposite(), 110, 11);
                     if(hasHired){
                         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
                     }
@@ -171,11 +175,13 @@ public strictfp class Archon {
                     rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
                     break;
                 }
+                Clock.yield();
             }catch (Exception e) {
             System.out.println("Archon Exception");
             e.printStackTrace();
             } 
         }
+        System.out.print("This archon is about to run phase 2");
         this.runArchonPhase2(archonNum, headedTo);
     }
     /**
@@ -205,12 +211,15 @@ public strictfp class Archon {
                 if (rc.getTeamBullets() >= bulletsToWin) {
                     rc.donate(bulletsToWin);
                 }
-                int numLivingGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
-                if(numLivingGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
-                    tryHireGardener(headedTo.opposite(), 110, 11);
+                int numActiveGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
+                if(numActiveGardeners < PHASE_2_ACTIVE_GARDENER_LIMIT){
+                    boolean hasHired = tryHireInGeneralDirection(headedTo.opposite(), 110, 11);
+                    if(hasHired){
+                        rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
+                    }
                 }
                 else{
-                    int diff = numLivingGardeners - PHASE_2_ACTIVE_GARDENER_LIMIT;
+                    int diff = numActiveGardeners - PHASE_2_ACTIVE_GARDENER_LIMIT;
                     if(Math.random() < Math.pow(0.5, diff)){
                         tryHireGardener(headedTo.opposite(), 110, 11);
                     }
@@ -229,6 +238,29 @@ public strictfp class Archon {
                 e.printStackTrace();
                 } 
         }
+    }
+    
+    /**
+     * Attempts to move randomly in the general direction of dir at most degreeOffset away, trying to move
+     * numChecks times
+     * @param dir direction to attempt moving towards
+     * @param degreeOffset 
+     * @param numChecks
+     * @return true if it successfully moves
+     * @throws GameActionException 
+     */
+    boolean tryHireInGeneralDirection(Direction dir, float degreeOffset, int numChecks) throws GameActionException{
+        int attempts = 0;
+        while(attempts < numChecks){
+            float multiplier = (float) (2*Math.random()) - 1;
+            Direction randomDir = dir.rotateLeftDegrees(multiplier * degreeOffset);
+            if(rc.canHireGardener(randomDir)){
+                rc.hireGardener(randomDir);
+                return true;
+            }
+            attempts +=1;
+        }
+        return false;
     }
     
     /**

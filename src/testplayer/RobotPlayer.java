@@ -3,13 +3,14 @@ import battlecode.common.*;
 
 /*
  * TODO:
- * Add limit for number of scouts
- * Improve archon seeking for attacking units (can't seem to read location?)
+ * Add limit for number of scouts (needs to be fixed)
+ * If enemy archon dies, needs to give new target for robots.
+ * Make lumberjacks during phase 2 just to cut down gardener clumps?
+ * Make gardeners move away from archon before planting tree clusters.
+ * 
  * Fix lumberjack (it doesn't stay to attack trees)
  * Movement fails really badly if they try going towards a fixed direction then get stuck
  * Purchasing of victory points does not seem to be working
- * 
- * 
  * 
  * Archon:
  * done
@@ -91,7 +92,7 @@ public strictfp class RobotPlayer {
                 break;
             case SOLDIER:
                 Soldier soldier = new Soldier(rc);
-                soldier.runSoldierPhase1();
+                soldier.runSoldier();
                 break;
             case LUMBERJACK:
                 Lumberjack lumberjack = new Lumberjack(rc);

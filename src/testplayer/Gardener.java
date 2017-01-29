@@ -22,8 +22,8 @@ public strictfp class Gardener {
      * For Phase 1<br>
      * A gardener will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>
-     * For the first 60 turns, it will be an active gardener and move in the direction of its leader archon every other turn 
-     * by reading the movement direction of said archon while trying to build other robots behind it for other purposes, 
+     * For the first 60 turns, it will be an active gardener and move away from the direction of its leader archon every turn 
+     * by reading the movement direction of said archon while trying to build other robots in front of it for other purposes, 
      * e.g. lumberjacks for terrain clearing, scouts for harassing/scouting, soldiers for basic defense.<br>
      * While active, it will check for the phase number each turn and perform these tasks/switch to a different task.
      * After 60 turns, it will stop being an active gardener by signaling to the broadcast that it is no longer active, 
@@ -51,27 +51,32 @@ public strictfp class Gardener {
         System.out.println("I'm a gardener!");
         int turnCount = 0;
         int archonNum = RobotPlayer.getNearestArchon();
-        Direction headedTo = RobotPlayer.getArchonDirection(archonNum);
+        //Direction headedTo = RobotPlayer.getArchonDirection(archonNum);
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
             try{
+//                MapLocation archonLoc = RobotPlayer.getArchonLoc(archonNum);
+//                System.out.println("Archon is in " + archonLoc.x + " " + archonLoc.y);
+//                MapLocation ownLoc= rc.getLocation();
+//                System.out.println("This gardener is in " + ownLoc.x + " " + ownLoc.y);
+//                System.out.println("I am heading towards " + archonLoc.directionTo(ownLoc).radians);
+                
+                Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
                 phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
-                if(turnCount%2 == 0){
-                    RobotPlayer.moveTowards(headedTo, rc);
-                }
+                //RobotPlayer.moveTowards(headedTo, rc);
+                RobotPlayer.tryMoveInGeneralDirection(headedTo, 110, 11);
                 double randomVar = Math.random();
-                if(randomVar < 0.4){
-                    tryBuild(RobotType.LUMBERJACK,headedTo.opposite());
+                if(randomVar < 0.5){
+                    tryBuild(RobotType.LUMBERJACK,headedTo);
                 }
-                else if(randomVar < 0.8){
+                else if(randomVar < 0.7){
                     int numScouts = rc.readBroadcast(RobotPlayer.LIVING_SCOUT_CHANNEL * 3 + archonNum);
-                    if(numScouts < LIVING_SCOUT_LIMIT && tryBuild(RobotType.SCOUT, headedTo.opposite())){
-                        
+                    if(numScouts < LIVING_SCOUT_LIMIT && tryBuild(RobotType.SCOUT, headedTo)){
                         rc.broadcast(RobotPlayer.LIVING_SCOUT_CHANNEL*3 + archonNum, numScouts + 1);
                     }
                 }
                 else{
-                    tryBuild(RobotType.SOLDIER, headedTo.opposite());
+                    tryBuild(RobotType.SOLDIER, headedTo);
                 }
                 turnCount +=1;
                 if(phaseNum != 1) {
@@ -90,7 +95,8 @@ public strictfp class Gardener {
         int currentActiveGardenerNum = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3+archonNum);
         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
         while(turnCount < MOVE_AWAY_TURNS){
-            RobotPlayer.moveTowards(headedTo.opposite(), rc);
+            Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
+            RobotPlayer.moveTowards(headedTo, rc);
             turnCount ++;
             Clock.yield();
         }
