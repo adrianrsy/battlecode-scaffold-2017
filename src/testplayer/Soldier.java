@@ -39,10 +39,18 @@ public strictfp class Soldier {
 
         while (true) {
             try {
-            	RobotPlayer.dodge(rc);
-            	RobotPlayer.moveTowards(RobotPlayer.enemyArchonLocation(rc), rc);
-            	RobotPlayer.moveTowards(headedTo, rc);
-            	RobotPlayer.tryAttackEnemyArchon(rc);
+                RobotPlayer.dodge(rc);
+                MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
+                if (enemyArchonLocation != null) {
+                    RobotPlayer.moveTowards(enemyArchonLocation, rc);
+                    if (!rc.hasMoved()) {
+                        if (rc.canFireSingleShot()) {
+                            rc.fireSingleShot(rc.getLocation().directionTo(enemyArchonLocation));
+                        }
+                    }
+                }
+                RobotPlayer.tryMove(RobotPlayer.randomDirection());
+                RobotPlayer.tryAttackEnemyArchon(rc);
                 MapLocation ownLocation = rc.getLocation();
                 
                 // See if there are any nearby enemy robots

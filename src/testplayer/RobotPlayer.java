@@ -4,7 +4,7 @@ import battlecode.common.*;
 /*
  * TODO:
  * Add limit for number of scouts (needs to be fixed) (not yet tested)
- * If enemy archon dies, needs to give new target for robots. (not yet implemented)
+ * If enemy archon dies, needs to give new target for robots. (implementation only removes dead enemy archons from broadcast)
  * Make lumberjacks during phase 2 just to cut down gardener clumps? (not yet implemented)
  * Make gardeners move away from archon before planting tree clusters. (implemented for phase 1, doesn't seem to work very well 
  * for phase 2)
@@ -85,7 +85,7 @@ public strictfp class RobotPlayer {
                 Scout scout = new Scout(rc);
                 scout.runScout();
         }
-	}
+    }
     
     /**
      * Allows the robot to the archon it is closest to
@@ -106,7 +106,7 @@ public strictfp class RobotPlayer {
                 archonNum = i;
             }
         }
-    	return archonNum;
+        return archonNum;
     }
     
     static MapLocation getArchonLoc(int archonNum) throws GameActionException{
@@ -127,16 +127,16 @@ public strictfp class RobotPlayer {
      * @return information about the nearest robot or null if list is empty
      */
     static RobotInfo findNearestRobot(RobotInfo[] robotList, MapLocation location) {
-    	float smallestDistance = Float.MAX_VALUE;
-    	RobotInfo nearestRobot = null;
-    	for (RobotInfo robotInfo : robotList) {
-    		float distance = robotInfo.location.distanceTo(location);
-			if (distance < smallestDistance) {
-				smallestDistance = distance;
-				nearestRobot = robotInfo;
-			}
-    	}
-    	return nearestRobot;
+        float smallestDistance = Float.MAX_VALUE;
+        RobotInfo nearestRobot = null;
+        for (RobotInfo robotInfo : robotList) {
+            float distance = robotInfo.location.distanceTo(location);
+            if (distance < smallestDistance) {
+                smallestDistance = distance;
+                nearestRobot = robotInfo;
+            }
+        }
+        return nearestRobot;
     }
     
     /**
@@ -146,20 +146,20 @@ public strictfp class RobotPlayer {
     static boolean isDying() {
         RobotType robotType = rc.getType();
         float robotHp = rc.getHealth();
-    	switch (robotType) {
-    	case GARDENER:
-    	    return robotHp < DYING_GARDENER_HP_THRESHOLD; 
-    	case SOLDIER:
-    		return robotHp < DYING_SOLDIER_HP_THRESHOLD;
-    	case LUMBERJACK:
-    		return robotHp < DYING_LUMBERJACK_HP_THRESHOLD;
-    	case SCOUT:
-    	    return robotHp < DYING_SCOUT_HP_THRESHOLD;
-    	case TANK:
-    	    return robotHp < DYING_TANK_HP_THRESHOLD;
-    	default:
-    		return false;
-    	}
+        switch (robotType) {
+        case GARDENER:
+            return robotHp < DYING_GARDENER_HP_THRESHOLD; 
+        case SOLDIER:
+            return robotHp < DYING_SOLDIER_HP_THRESHOLD;
+        case LUMBERJACK:
+            return robotHp < DYING_LUMBERJACK_HP_THRESHOLD;
+        case SCOUT:
+            return robotHp < DYING_SCOUT_HP_THRESHOLD;
+        case TANK:
+            return robotHp < DYING_TANK_HP_THRESHOLD;
+        default:
+            return false;
+        }
     }
 
     /**
@@ -347,16 +347,31 @@ public strictfp class RobotPlayer {
         return(tryMove(towards.rotateRightDegrees(90)) || tryMove(towards.rotateLeftDegrees(90)));
     }
     
-    static MapLocation enemyArchonLocation(RobotController rc) throws GameActionException{
+    /**
+     * Get the broadcasted enemy archon ids.
+     * @param rc
+     * @return array of enemy archon ids or -1 for each id not in broadcast
+     * @throws GameActionException
+     */
+    static int[] getEnemyArchonIds(RobotController rc) throws GameActionException {
+        int[] ids = new int[MAX_ARCHONS];
         for (int i = 1; i<= MAX_ARCHONS; i++){
-            int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*3 + i);
+            ids[i-1] = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*3 + i);
+        }
+        return ids;
+    }
+    
+    static MapLocation enemyArchonLocation(RobotController rc) throws GameActionException{
+        int[] ids = getEnemyArchonIds(rc);
+        for (int i = 1; i<= MAX_ARCHONS; i++){
+            int enemyArchonId = ids[i-1];
             if(enemyArchonId != -1){
                 float archonX = rc.readBroadcastFloat(ENEMY_ARCHON_X_CHANNEL*3+i);
                 float archonY = rc.readBroadcastFloat(ENEMY_ARCHON_Y_CHANNEL*3+i);
                 return new MapLocation(archonX,archonY);
             }
         }
-        return rc.getLocation().add(randomDirection());
+        return null;
     }
     
     /**
@@ -368,26 +383,26 @@ public strictfp class RobotPlayer {
         if(rc.hasAttacked()){
             return false;
         }
-    	for (int i=1; i<=3; i+=1) {
-    		int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
-    		if (enemyArchonId != -1 && rc.canSenseRobot(enemyArchonId)) {
-    			RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
-    			if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
-    			    if(rc.canFirePentadShot()){
-    			        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
-    			    }
-    			}
-    			else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
+        for (int i=1; i<=3; i+=1) {
+            int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
+            if (enemyArchonId != -1 && rc.canSenseRobot(enemyArchonId)) {
+                RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
+                if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
+                    if(rc.canFirePentadShot()){
+                        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
+                    }
+                }
+                else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
                     if(rc.canFireTriadShot()){
                         rc.fireTriadShot(rc.getLocation().directionTo(enemyArchon.location));
                     }
                 }
-    			else if (rc.canFireSingleShot()) {
-    				rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
-    			}
-    			return true;
-    		}
-    	}
-    	return false;
+                else if (rc.canFireSingleShot()) {
+                    rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
+                }
+                return true;
+            }
+        }
+        return false;
     }
 }
