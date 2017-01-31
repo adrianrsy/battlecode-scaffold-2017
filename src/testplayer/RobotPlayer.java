@@ -283,7 +283,7 @@ public strictfp class RobotPlayer {
                 rc.broadcast(ENEMY_ROBOT_CHANNEL_2 * 3 + archonNum, -1);
             }
             else{
-                if(rc.senseRobotAtLocation(robotLoc1).getID()!= rc.readBroadcast(ENEMY_ROBOT_CHANNEL_2  * 3 + archonNum)){
+                if(rc.senseRobotAtLocation(robotLoc2).getID()!= rc.readBroadcast(ENEMY_ROBOT_CHANNEL_2  * 3 + archonNum)){
                     rc.broadcast(ENEMY_ROBOT_CHANNEL_2 * 3 + archonNum, rc.senseRobotAtLocation(robotLoc2).getID());
                 }
             }

@@ -46,6 +46,8 @@ public strictfp class Soldier {
         while (true) {
             try {
                 RobotPlayer.dodge();
+                RobotPlayer.updateEnemyRobotLocs(archonNum);
+                RobotPlayer.updateTreeLocs(archonNum);
                 MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation();
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);
@@ -55,22 +57,24 @@ public strictfp class Soldier {
                         }
                     }
                 }
-                RobotPlayer.tryMove(RobotPlayer.randomDirection());
+                MapLocation enemyLoc = RobotPlayer.readRobotLocation(archonNum);
+                if(!enemyLoc.equals(rc.getLocation()))
+                    headedTo = rc.getLocation().directionTo(enemyLoc);
+                headedTo = tryMoveInGeneralDirection(headedTo,110,11);
                 RobotPlayer.tryAttackEnemyArchon(rc);
                 MapLocation ownLocation = rc.getLocation();
                 
                 // See if there are any nearby enemy robots
                 RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
                 
-                if(currentTargetId > 0 && rc.canSenseRobot(currentTargetId)){
+                if(currentTargetId != -1 && rc.canSenseRobot(currentTargetId)){
                     Direction attackDirection = ownLocation.directionTo(rc.senseRobot(currentTargetId).getLocation());
-                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot()) {                     
+                    if(RobotPlayer.canShootRobot(rc, currentTargetId, 5))
                         rc.firePentadShot(attackDirection);
-                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot()) {
+                    else if(RobotPlayer.canShootRobot(rc, currentTargetId, 3))
                         rc.fireTriadShot(attackDirection);
-                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot()) {
+                    else if(RobotPlayer.canShootRobot(rc, currentTargetId, 1))
                         rc.fireSingleShot(attackDirection);
-                    }
                 }
                 else{
                     currentTargetId = -1;
@@ -80,6 +84,7 @@ public strictfp class Soldier {
                         if (robot.type == RobotType.ARCHON) {
                             enemyArchons++;
                             if (enemyArchons == 1) {
+                                currentTargetId = robot.getID();
                                 nearestArchonLoc = robot.getLocation();
                             }
                             for(int i =1; i<=3; i++){
@@ -103,28 +108,25 @@ public strictfp class Soldier {
                         headedTo = ownLocation.directionTo(nearbyEnemies[0].getLocation());
                     }
                     
-                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot()) {
-                        // shoot at the nearest enemy archon if it is within sensing radius
-                        // if not, shoot at the nearest enemy
-                        if (enemyArchons > 0) {
-                            rc.firePentadShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {                        
-                            rc.firePentadShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
-                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot()) {
-                        if (enemyArchons > 0) {
-                            rc.fireTriadShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {
-                            rc.fireTriadShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
-                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot()) {
-                        if (enemyArchons > 0) {
-                            rc.fireSingleShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {
-                            rc.fireSingleShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
+                    if(rc.canSenseRobot(currentTargetId)){
+                        Direction attackDirection = ownLocation.directionTo(rc.senseRobot(currentTargetId).getLocation());
+                        if(RobotPlayer.canShootRobot(rc, currentTargetId, 5))
+                            rc.firePentadShot(attackDirection);
+                        else if(RobotPlayer.canShootRobot(rc, currentTargetId, 3))
+                            rc.fireTriadShot(attackDirection);
+                        else if(RobotPlayer.canShootRobot(rc, currentTargetId, 1))
+                            rc.fireSingleShot(attackDirection);
                     }
-
+                    else if (nearbyEnemies.length > 0){
+                        currentTargetId = nearbyEnemies[0].getID();
+                        Direction attackDirection = ownLocation.directionTo(rc.senseRobot(currentTargetId).getLocation());
+                        if(RobotPlayer.canShootRobot(rc, currentTargetId, 5))
+                            rc.firePentadShot(attackDirection);
+                        else if(RobotPlayer.canShootRobot(rc, currentTargetId, 3))
+                            rc.fireTriadShot(attackDirection);
+                        else if(RobotPlayer.canShootRobot(rc, currentTargetId, 1))
+                            rc.fireSingleShot(attackDirection);
+                    }
                     // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                     Clock.yield();
                 }  
@@ -135,6 +137,32 @@ public strictfp class Soldier {
         }
     }
 
+
+    /**
+     * Attempts to move randomly in the general direction of dir at most degreeOffset away, trying to move
+     * numChecks times
+     * @param dir direction to attempt moving towards
+     * @param degreeOffset 
+     * @param numChecks
+     * @return the direction it ended up heading towards.
+     * @throws GameActionException 
+     */
+    Direction tryMoveInGeneralDirection(Direction dir, float degreeOffset, int numChecks) throws GameActionException{
+        if(rc.hasMoved()){
+            return dir;
+        }
+        int attempts = 0;
+        while(attempts < numChecks){
+            float multiplier = (float) (2*Math.random()) - 1;
+            Direction randomDir = dir.rotateLeftDegrees(multiplier * degreeOffset);
+            if(!rc.hasMoved() && rc.canMove(randomDir)){
+                rc.move(randomDir);
+                return randomDir;
+            }
+            attempts +=1;
+        }
+        return dir;
+    }
 }
 
 //boolean hasSentDyingBroadcast = false;

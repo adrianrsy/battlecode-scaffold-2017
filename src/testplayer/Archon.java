@@ -25,7 +25,7 @@ public strictfp class Archon {
     static Direction NORTH_EAST = new Direction((float) ((NORTH.radians + EAST.radians)/2.0));
     static Direction NORTH_WEST = new Direction((float) ((NORTH.radians + WEST.radians)/2.0));
     static Direction SOUTH_EAST = new Direction((float) ((SOUTH.radians + EAST.radians)/2.0));
-    static Direction SOUTH_WEST = new Direction((float) ((SOUTH.radians + WEST.radians)/2.0));
+    static Direction SOUTH_WEST = new Direction((float) -((NORTH.radians + EAST.radians)/2.0));
     
     /**
      * For Phase 1<br>
@@ -93,7 +93,7 @@ public strictfp class Archon {
         Direction headedTo;
         switch(archonNum){
         case 1:
-            if(Team.B.equals(rc.getTeam())){ 
+            if(Team.A.equals(rc.getTeam())){ 
                 headedTo = SOUTH_WEST; 
                 System.out.println("I am headed south west.");
             }

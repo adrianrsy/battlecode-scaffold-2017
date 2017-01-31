@@ -43,6 +43,10 @@ public strictfp class Scout {
             try {
             	// first try to dodge any bullets
             	RobotPlayer.dodge();
+            	RobotPlayer.updateEnemyRobotLocs(archonNum);
+            	RobotPlayer.updateTreeLocs(archonNum);
+            	RobotPlayer.clearEnemyLocs(archonNum);
+            	RobotPlayer.clearTreeLocs(archonNum);
             	MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation();
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);

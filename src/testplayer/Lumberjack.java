@@ -183,10 +183,13 @@ public strictfp class Lumberjack {
                             if(rc.canChop(nearbyTree.getID())){
                                 rc.chop(nearbyTree.getID());
                                 hasChopped = true;
+                                break;
                             }
                         }
                     }
                     hasTarget = hasChopped;
+                    RobotPlayer.clearTreeLocs(archonNum);
+                    RobotPlayer.clearEnemyLocs(archonNum);
                 }
                 RobotInfo[] nearbyEnemyRobots = rc.senseNearbyRobots(rc.getType().bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE, enemy);
                 RobotInfo[] nearbyAllyRobots = rc.senseNearbyRobots(rc.getType().bodyRadius + GameConstants.INTERACTION_DIST_FROM_EDGE, ownTeam);
