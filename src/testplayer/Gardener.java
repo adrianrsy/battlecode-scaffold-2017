@@ -154,7 +154,7 @@ public strictfp class Gardener {
         Direction plantDir = Direction.getEast();
         while(!hasSettled && !hasBroadcastedDying){
             try{
-                RobotPlayer.dodge(4, rc);
+                RobotPlayer.dodge(4);
                 headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
                 if(isTankBuilder){

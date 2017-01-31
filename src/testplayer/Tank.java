@@ -46,8 +46,8 @@ public strictfp class Tank {
 
         while (true) {
             try {
-                RobotPlayer.dodge(rc);
-                MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
+                RobotPlayer.dodge();
+                MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation();
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);
                 }

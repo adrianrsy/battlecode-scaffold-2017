@@ -434,7 +434,7 @@ public strictfp class RobotPlayer {
      * @param bullet The bullet in question
      * @return True if the line of the bullet's path intersects with this robot's current position.
      */
-    static boolean willCollideWithMe(BulletInfo bullet, RobotController rc) {
+    static boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 
         // Get relevant bullet information
@@ -464,14 +464,14 @@ public strictfp class RobotPlayer {
      * Attempts to dodge incoming bullets that it is in the line of fire from
      * @throws GameActionException
      */
-    static boolean dodge(RobotController rc) throws GameActionException {
+    static boolean dodge() throws GameActionException {
         if(rc.hasMoved()){
             return false;
         }
         BulletInfo[] bullets = rc.senseNearbyBullets();
         for (BulletInfo bi : bullets) {
-            if (willCollideWithMe(bi, rc)) {
-                trySidestep(bi, rc);
+            if (willCollideWithMe(bi)) {
+                trySidestep(bi);
             }
         }
         return true;
@@ -481,14 +481,14 @@ public strictfp class RobotPlayer {
      * Attempts to dodge incoming bullets that it is in the line of fire from within a certain distance
      * @throws GameActionException
      */
-    static boolean dodge(float dist, RobotController rc) throws GameActionException {
+    static boolean dodge(float dist) throws GameActionException {
         if(rc.hasMoved()){
             return false;
         }
         BulletInfo[] bullets = rc.senseNearbyBullets(dist);
         for (BulletInfo bi : bullets) {
-            if (willCollideWithMe(bi, rc)) {
-                trySidestep(bi, rc);
+            if (willCollideWithMe(bi)) {
+                trySidestep(bi);
             }
         }
         return true;
@@ -501,7 +501,7 @@ public strictfp class RobotPlayer {
      * @return
      * @throws GameActionException
      */
-    static boolean trySidestep(BulletInfo bullet, RobotController rc) throws GameActionException{
+    static boolean trySidestep(BulletInfo bullet) throws GameActionException{
         Direction towards = bullet.getDir();
         //MapLocation leftGoal = rc.getLocation().add(towards.rotateLeftDegrees(90), rc.getType().bodyRadius);
         //MapLocation rightGoal = rc.getLocation().add(towards.rotateRightDegrees(90), rc.getType().bodyRadius);
@@ -514,7 +514,7 @@ public strictfp class RobotPlayer {
      * @return array of enemy archon ids or -1 for each id not in broadcast
      * @throws GameActionException
      */
-    static int[] getEnemyArchonIds(RobotController rc) throws GameActionException {
+    static int[] getEnemyArchonIds() throws GameActionException {
         int[] ids = new int[MAX_ARCHONS];
         for (int i = 1; i<= MAX_ARCHONS; i++){
             ids[i-1] = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*3 + i);
@@ -528,8 +528,8 @@ public strictfp class RobotPlayer {
      * @return the location of an enemy archon or null if none have been sense
      * @throws GameActionException
      */
-    static MapLocation enemyArchonLocation(RobotController rc) throws GameActionException{
-        int[] ids = getEnemyArchonIds(rc);
+    static MapLocation enemyArchonLocation() throws GameActionException{
+        int[] ids = getEnemyArchonIds();
         for (int i = 1; i<= MAX_ARCHONS; i++){
             int enemyArchonId = ids[i-1];
             if(enemyArchonId != -1){
@@ -539,6 +539,38 @@ public strictfp class RobotPlayer {
             }
         }
         return null;
+    }
+    
+    /**
+     * Reads a tree location from the channels or returns own location if it not on the channels
+     * @param archonNum
+     * @return
+     * @throws GameActionException
+     */
+    static MapLocation readTreeLocation(int archonNum) throws GameActionException{
+        if(rc.readBroadcast(TREE_TARGET_CHANNEL_1*3 + archonNum) != -1){
+            return new MapLocation(rc.readBroadcastFloat(ENEMY_TREE_1_X_CHANNEL * 3 + archonNum), rc.readBroadcastFloat(ENEMY_TREE_1_Y_CHANNEL*3 + archonNum));
+        }
+        else if (rc.readBroadcast(TREE_TARGET_CHANNEL_2*3 + archonNum) != -1){
+            return new MapLocation(rc.readBroadcastFloat(ENEMY_TREE_2_X_CHANNEL * 3 + archonNum), rc.readBroadcastFloat(ENEMY_TREE_2_Y_CHANNEL*3 + archonNum));
+        }
+        return rc.getLocation();
+    }
+    
+    /**
+     * Reads an enemy location from the channels or returns own location if it not on the channels
+     * @param archonNum
+     * @return
+     * @throws GameActionException
+     */
+    static MapLocation readRobotLocation(int archonNum) throws GameActionException{
+        if(rc.readBroadcast(RobotPlayer.ENEMY_ROBOT_CHANNEL_1*3 + archonNum) != -1){
+            return new MapLocation(rc.readBroadcastFloat(ENEMY_ROBOT_1_X_CHANNEL * 3 + archonNum), rc.readBroadcastFloat(ENEMY_ROBOT_1_Y_CHANNEL*3 + archonNum));
+        }
+        else if (rc.readBroadcast(ENEMY_ROBOT_CHANNEL_2*3 + archonNum) != -1){
+            return new MapLocation(rc.readBroadcastFloat(ENEMY_ROBOT_2_X_CHANNEL * 3 + archonNum), rc.readBroadcastFloat(ENEMY_ROBOT_2_Y_CHANNEL*3 + archonNum));
+        }
+        return rc.getLocation();
     }
     
     /**

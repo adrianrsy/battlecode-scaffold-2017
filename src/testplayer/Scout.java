@@ -42,14 +42,14 @@ public strictfp class Scout {
         while (!hidingMode) {
             try {
             	// first try to dodge any bullets
-            	RobotPlayer.dodge(rc);
-            	MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
+            	RobotPlayer.dodge();
+            	MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation();
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);
                 }
                 RobotPlayer.tryMove(RobotPlayer.randomDirection());
                 
-                int[] enemyArchonIds = RobotPlayer.getEnemyArchonIds(rc);
+                int[] enemyArchonIds = RobotPlayer.getEnemyArchonIds();
                 // check which broadcasted enemy archon ids belong to dead archons
                 for(int i=0; i<enemyArchonIds.length; i++){
                     if (enemyArchonIds[i] != -1) {
@@ -110,7 +110,7 @@ public strictfp class Scout {
         while (hidingMode) {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                RobotPlayer.dodge(4, rc);
+                RobotPlayer.dodge(4);
             	MapLocation ownLocation = rc.getLocation();
             	TreeInfo treeAtLocation = rc.senseTreeAtLocation(ownLocation);
             	if (treeAtLocation != null && treeAtLocation.team == enemy) {
