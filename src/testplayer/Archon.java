@@ -10,7 +10,7 @@ public strictfp class Archon {
     }
     
     //Phase turn limits
-    static int PHASE_1_TURN_LIMIT = 200;
+    static int PHASE_1_TURN_LIMIT = 300;
     
     //Limits for active gardener production, after some number of turn gardeners may stay behind and 
     //become inactive, a.k.a plant trees and stall
@@ -81,31 +81,26 @@ public strictfp class Archon {
         }
         //If second channel has not yet been assigned, this must be the second archon
         else if (rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 2) != 1){
-            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 2, 1);
-            archonNum =2;
+            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 2, phaseNum);
+            archonNum = 2;
         }
         //Otherwise, it is the third archon
         else{
-            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 3, 1);
+            rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + 3, phaseNum);
             archonNum = 3;
-        }
-        
-        //int numRoundsRemaining;
-        if(archonNum == 1){
-            //numRoundsRemaining = rc.getRoundLimit() - rc.getRoundNum();
-            //rc.broadcast(RobotPlayer.ROUND_NUMBER_CHANNEL, numRoundsRemaining);
-        }
-        else{
-            //numRoundsRemaining = rc.readBroadcast(RobotPlayer.ROUND_NUMBER_CHANNEL);
         }
         
         Direction headedTo;
         switch(archonNum){
         case 1:
-            if(Team.A.equals(rc.getTeam())) 
-                headedTo = SOUTH_WEST;
-            else
+            if(Team.B.equals(rc.getTeam())){ 
+                headedTo = SOUTH_WEST; 
+                System.out.println("I am headed south west.");
+            }
+            else{
                 headedTo = NORTH_EAST;
+                System.out.println("I am headed north east.");
+            }
             break;
         case 2:
             headedTo = SOUTH_EAST;
@@ -118,48 +113,28 @@ public strictfp class Archon {
             headedTo = SOUTH_WEST;
             break;
         }
+        
+        //Initialize various channels
+        rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 + archonNum, -1);
+        rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, -1);
+        rc.broadcast(RobotPlayer.ENEMY_ROBOT_CHANNEL_1*3 + archonNum, -1);
+        rc.broadcast(RobotPlayer.ENEMY_ROBOT_CHANNEL_2*3 + archonNum, -1);
+        rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_1*3 + archonNum, -1);
+        rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_2*3 + archonNum, -1);
+        
         int turnCount = 0;
         while(true){
             try{
-                System.out.println("This is archon " + archonNum + "a the start of turn " + turnCount);
+                //System.out.println("This is archon " + archonNum + " at the start of turn " + turnCount);
                 rc.broadcastFloat(RobotPlayer.ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum, headedTo.radians);
                 boolean hasMoved = RobotPlayer.moveTowards(headedTo, rc);
                 MapLocation loc = rc.getLocation();
                 rc.broadcastFloat(RobotPlayer.ARCHON_LOCATION_X_CHANNEL*3 + archonNum, loc.x);
                 rc.broadcastFloat(RobotPlayer.ARCHON_LOCATION_Y_CHANNEL*3 + archonNum, loc.y);
-                if(!hasMoved){
-                    TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
-                    boolean obstacleIsTree = false;
-                    for(TreeInfo nearbyTree: nearbyTrees){
-                        MapLocation treeLoc = nearbyTree.getLocation();
-                        if(!nearbyTree.getTeam().equals(rc.getTeam()) &&
-                           loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
-                           loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
-                            if(rc.canShake(treeLoc)) rc.shake(treeLoc);
-                            rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, treeLoc.x);
-                            rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, treeLoc.y);
-                            rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_TREE);
-                            rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyTree.getID());
-                            obstacleIsTree = true;
-                            break;
-                        }
-                    }
-                    if(!obstacleIsTree){
-                        RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
-                        for(RobotInfo nearbyRobot: nearbyRobots){
-                            MapLocation treeLoc = nearbyRobot.getLocation();
-                            if(!nearbyRobot.getTeam().equals(rc.getTeam()) &&
-                               loc.distanceTo(treeLoc) < RobotType.ARCHON.strideRadius &&
-                               loc.directionTo(treeLoc).degreesBetween(headedTo) < 45){
-                                rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_X_CHANNEL*3 + archonNum, treeLoc.x);
-                                rc.broadcastFloat(RobotPlayer.IMMEDIATE_TARGET_Y_CHANNEL*3 + archonNum, treeLoc.y);
-                                rc.broadcast(RobotPlayer.TARGET_TYPE*3 + archonNum, RobotPlayer.TARGET_IS_ROBOT);
-                                rc.broadcast(RobotPlayer.TARGET_ID*3 + archonNum, nearbyRobot.getID());
-                                break;
-                            }
-                        }
-                    }   
-                }
+                
+                RobotPlayer.updateTreeLocs(archonNum);
+                RobotPlayer.updateEnemyRobotLocs(archonNum);
+                
                 int numActiveGardeners = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum);
                 if (numActiveGardeners < PHASE_1_ACTIVE_GARDENER_LIMIT){
                     boolean hasHired = tryHireInGeneralDirection(headedTo.opposite(), 110, 11);

@@ -17,9 +17,6 @@ import battlecode.common.*;
 public strictfp class RobotPlayer {
     static RobotController rc;
     
-    //Offset when converting floats to integers and vice versa
-    static int CONVERSION_OFFSET = 100000;
-    
     //For channel numbers, get channel number, multiply by 3, then add archon number (from 1 to 3)
     static final int PHASE_NUMBER_CHANNEL = 0;
     static final int ARCHON_DIRECTION_RADIANS_CHANNEL = 1;
@@ -37,6 +34,27 @@ public strictfp class RobotPlayer {
     static final int GARDENER_MAX_DIST_CHANNEL = 13;
     static final int GARDENER_MAX_DIST_ID_CHANNEL = 14;
     static final int LIVING_SCOUT_CHANNEL = 15;
+    
+    
+    static final int ENEMY_ROBOT_CHANNEL_1 = 16;
+    static final int NUM_TARGETING_ROBOT_CHANNEL_1 = 17;
+    static final int ENEMY_ROBOT_1_X_CHANNEL = 18;
+    static final int ENEMY_ROBOT_1_Y_CHANNEL = 19;
+    
+    static final int ENEMY_ROBOT_CHANNEL_2 = 20;
+    static final int NUM_TARGETING_ROBOT_CHANNEL_2 = 21;
+    static final int ENEMY_ROBOT_2_X_CHANNEL = 22;
+    static final int ENEMY_ROBOT_2_Y_CHANNEL = 23;
+       
+    static final int TREE_TARGET_CHANNEL_1 = 24;
+    static final int NUM_TARGETING_TREE_CHANNEL_1 = 25;
+    static final int ENEMY_TREE_1_X_CHANNEL = 26;
+    static final int ENEMY_TREE_1_Y_CHANNEL = 27;
+    
+    static final int TREE_TARGET_CHANNEL_2 = 28;
+    static final int NUM_TARGETING_TREE_CHANNEL_2 = 29;
+    static final int ENEMY_TREE_2_X_CHANNEL = 30;
+    static final int ENEMY_TREE_2_Y_CHANNEL = 31;
     
     static final int TARGET_IS_TREE = 1;
     static final int TARGET_IS_ROBOT = 2;
@@ -109,34 +127,103 @@ public strictfp class RobotPlayer {
         return archonNum;
     }
     
+    /**
+     * Reads the broadcast channel to get the location of a specific archon
+     * @param archonNum
+     * @return MapLocation of archon
+     * @throws GameActionException
+     */
     static MapLocation getArchonLoc(int archonNum) throws GameActionException{
         float archonX = rc.readBroadcastFloat(ARCHON_LOCATION_X_CHANNEL*3+archonNum);
         float archonY = rc.readBroadcastFloat(ARCHON_LOCATION_Y_CHANNEL*3+archonNum);
         return new MapLocation(archonX, archonY);
     }
     
+    /**
+     * Reads the broadcast channel to get the direction a specific archon is headed towards
+     * @param archonNum
+     * @return Direction of archon
+     * @throws GameActionException
+     */
     static Direction getArchonDirection(int archonNum) throws GameActionException{
         float headedToRadians = rc.readBroadcastFloat(ARCHON_DIRECTION_RADIANS_CHANNEL*3 + archonNum);
         return new Direction(headedToRadians);
     }
     
     /**
-     * Find the nearest robot from a list of robots to a certain location
-     * @param robotList list of robot's info
-     * @param location 
-     * @return information about the nearest robot or null if list is empty
+     * Adds locations of neutral and enemy trees to broadcasting channels
+     * @param archonNum 
+     * @return true if an update happened
+     * @throws GameActionException
      */
-    static RobotInfo findNearestRobot(RobotInfo[] robotList, MapLocation location) {
-        float smallestDistance = Float.MAX_VALUE;
-        RobotInfo nearestRobot = null;
-        for (RobotInfo robotInfo : robotList) {
-            float distance = robotInfo.location.distanceTo(location);
-            if (distance < smallestDistance) {
-                smallestDistance = distance;
-                nearestRobot = robotInfo;
+    static boolean updateTreeLocs(int archonNum) throws GameActionException{
+        TreeInfo[] nearbyNeutralTrees = rc.senseNearbyTrees(-1,Team.NEUTRAL);
+        TreeInfo[] nearbyEnemyTrees = rc.senseNearbyTrees(-1, rc.getTeam().opponent());
+        TreeInfo[] nearbyTrees;
+        if(nearbyNeutralTrees.length > 0 && nearbyEnemyTrees.length > 0){
+            float dist1 = rc.getLocation().distanceTo(nearbyNeutralTrees[0].getLocation());
+            float dist2 = rc.getLocation().distanceTo(nearbyEnemyTrees[0].getLocation());
+            if(dist1 < dist2)
+                nearbyTrees = new TreeInfo[] {nearbyNeutralTrees[0]};
+            else
+                nearbyTrees = new TreeInfo[] {nearbyEnemyTrees[0]};
+        }
+        else if(nearbyNeutralTrees.length > 0){
+            nearbyTrees = nearbyNeutralTrees; 
+        }
+        else{
+            nearbyTrees = nearbyEnemyTrees;
+        }
+        
+        if(nearbyTrees.length > 0){
+            int treeChannel1 = rc.readBroadcast(RobotPlayer.TREE_TARGET_CHANNEL_1*3 + archonNum);
+            int treeChannel2 = rc.readBroadcast(RobotPlayer.TREE_TARGET_CHANNEL_2*3 + archonNum);
+            int treeId = nearbyTrees[0].getID();
+            if( treeChannel1 != treeId && treeChannel2 != treeId){
+                MapLocation treeLoc = nearbyTrees[0].getLocation();
+                if(treeChannel2 == -1){
+                    rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_2*3 + archonNum, treeId);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_TREE_2_X_CHANNEL*3 + archonNum, treeLoc.x);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_TREE_2_Y_CHANNEL*3 + archonNum, treeLoc.y);
+                }
+                else{
+                    rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_1*3 + archonNum, treeId);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_TREE_1_X_CHANNEL*3 + archonNum, treeLoc.x);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_TREE_1_Y_CHANNEL*3 + archonNum, treeLoc.y);
+                }
+                return true;
             }
         }
-        return nearestRobot;
+        return false;
+    }
+    
+    /**
+     * Adds enemy robot locations to the channel
+     * @param archonNum
+     * @return
+     * @throws GameActionException
+     */
+    static boolean updateEnemyRobotLocs(int archonNum) throws GameActionException{
+        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1,rc.getTeam().opponent());
+        if(nearbyRobots.length > 0){
+            int robotChannel1 = rc.readBroadcast(RobotPlayer.ENEMY_ROBOT_CHANNEL_1*3 + archonNum);
+            int robotChannel2 = rc.readBroadcast(RobotPlayer.ENEMY_ROBOT_CHANNEL_2*3 + archonNum);
+            int robotId = nearbyRobots[0].getID();
+            if( robotChannel1 != robotId && robotChannel2 != robotId){
+                MapLocation robotLoc = nearbyRobots[0].getLocation();
+                if(robotChannel2 == -1){
+                    rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_2*3 + archonNum, robotId);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_ROBOT_2_X_CHANNEL*3 + archonNum, robotLoc.x);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_ROBOT_2_Y_CHANNEL*3 + archonNum, robotLoc.y);
+                }
+                else{
+                    rc.broadcast(RobotPlayer.TREE_TARGET_CHANNEL_1*3 + archonNum, robotId);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_ROBOT_1_X_CHANNEL*3 + archonNum, robotLoc.x);
+                    rc.broadcastFloat(RobotPlayer.ENEMY_ROBOT_1_Y_CHANNEL*3 + archonNum, robotLoc.y);
+                }
+            }
+        }
+        return true;
     }
     
     /**
@@ -168,17 +255,6 @@ public strictfp class RobotPlayer {
      */
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
-
-    /**
-     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
-     *
-     * @param dir The intended direction of movement
-     * @return true if a move was performed
-     * @throws GameActionException
-     */
-    static boolean tryMove(Direction dir) throws GameActionException {
-        return tryMove(dir,20,3);
     }
 
     /**
@@ -217,6 +293,17 @@ public strictfp class RobotPlayer {
         }
         // A move never happened, so return false.
         return false;
+    }
+    
+    /**
+     * Attempts to move in a given direction, while avoiding small obstacles directly in the path.
+     *
+     * @param dir The intended direction of movement
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    static boolean tryMove(Direction dir) throws GameActionException {
+        return tryMove(dir,60,6);
     }
     
     /**
@@ -361,6 +448,12 @@ public strictfp class RobotPlayer {
         return ids;
     }
     
+    /**
+     * Read broadcast channels to get the location of an enemy archon
+     * @param rc
+     * @return the location of an enemy archon or null if none have been sense
+     * @throws GameActionException
+     */
     static MapLocation enemyArchonLocation(RobotController rc) throws GameActionException{
         int[] ids = getEnemyArchonIds(rc);
         for (int i = 1; i<= MAX_ARCHONS; i++){
@@ -375,32 +468,113 @@ public strictfp class RobotPlayer {
     }
     
     /**
+     * Checks whether or not a team mate is within the shot line given the team mate, own location, and shooting
+     * direction
+     * @param nearbyTeamMate
+     * @param ownLoc
+     * @param shootingDir
+     * @return
+     */
+    static boolean willHit(RobotInfo nearbyTeamMate, MapLocation ownLoc, Direction shootingDir){
+        MapLocation teamMateLoc = nearbyTeamMate.getLocation();
+        float theta = shootingDir.radiansBetween(ownLoc.directionTo(nearbyTeamMate.getLocation()));
+        if(theta < Math.PI/2 && theta > -Math.PI/2){
+            float hypotheneus = ownLoc.distanceTo(teamMateLoc);
+            if(hypotheneus * Math.sin(theta) <= nearbyTeamMate.getRadius())
+                return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Checks whether or not a robot can shoot at a certain target robot at the center while avoiding friendly fire
+     * Accounts for whether or not the robot is actually allowed to shoot
+     * @param rc
+     * @param enemyRobotId id of the center target
+     * @param numShots number of shots to be fired (1, 3, or 5 only)
+     * @return true if it is possible to shoot without hitting any robots closer than the target
+     * @throws GameActionException
+     */
+    static boolean canShootRobot(RobotController rc, int enemyRobotId, int numShots) throws GameActionException{
+        if(!(numShots==1 || numShots == 3 || numShots == 5))
+            return false;
+        if(rc.hasAttacked() || !rc.canSenseRobot(enemyRobotId))
+            return false;
+        if(!rc.canFireSingleShot())
+            return false;
+        RobotInfo enemyInfo = rc.senseRobot(enemyRobotId);
+        MapLocation enemyLoc = enemyInfo.getLocation();
+        MapLocation ownLoc = rc.getLocation();
+        Direction enemyDir = ownLoc.directionTo(enemyLoc);
+        RobotInfo[] nearbyTeamMates = rc.senseNearbyRobots(ownLoc.distanceTo(enemyLoc), rc.getTeam());
+        
+        for (RobotInfo nearbyTeamMate : nearbyTeamMates){
+            if(willHit(nearbyTeamMate, ownLoc, enemyDir))
+                return false;
+        }
+        
+        if(numShots == 3 && rc.canFireTriadShot()){
+            float spread = GameConstants.TRIAD_SPREAD_DEGREES;
+            for(int i = 0; i<1; i++){
+                Direction shootDirLeft = enemyDir.rotateLeftDegrees(spread);
+                Direction shootDirRight = enemyDir.rotateRightDegrees(spread);
+                for (RobotInfo nearbyTeamMate : nearbyTeamMates){
+                    if(willHit(nearbyTeamMate, ownLoc, shootDirLeft))
+                        return false;
+                    if(willHit(nearbyTeamMate, ownLoc, shootDirRight))
+                        return false;
+                }
+            }
+        }
+        else{
+            return false;
+        }
+        
+        if(numShots == 5 && rc.canFirePentadShot()){
+            float spread = GameConstants.PENTAD_SPREAD_DEGREES;
+            for(int i = 0; i<2; i++){
+                Direction shootDirLeft = enemyDir.rotateLeftDegrees(spread);
+                Direction shootDirRight = enemyDir.rotateRightDegrees(spread);
+                for (RobotInfo nearbyTeamMate : nearbyTeamMates){
+                    if(willHit(nearbyTeamMate, ownLoc, shootDirLeft))
+                        return false;
+                    if(willHit(nearbyTeamMate, ownLoc, shootDirRight))
+                        return false;
+                }
+            }
+        }
+        else{
+            return false;
+        }
+        return true;
+    }
+    
+    /**
      * Tries to attack an enemy archon based on the enemy archon ids broadcasted
-     * @return a boolean of whether an attack was tried
+     * @return a boolean of whether an attack was performed
      * @throws GameActionException
      */
     static boolean tryAttackEnemyArchon(RobotController rc) throws GameActionException {
         if(rc.hasAttacked()){
             return false;
         }
+        MapLocation ownLoc = rc.getLocation();
         for (int i=1; i<=3; i+=1) {
             int enemyArchonId = rc.readBroadcast(ENEMY_ARCHON_ID_CHANNEL*MAX_ARCHONS+i);
             if (enemyArchonId != -1 && rc.canSenseRobot(enemyArchonId)) {
                 RobotInfo enemyArchon = rc.senseRobot(enemyArchonId);
-                if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6){
-                    if(rc.canFirePentadShot()){
-                        rc.firePentadShot(rc.getLocation().directionTo(enemyArchon.location));
-                    }
+                if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 6 && canShootRobot(rc, enemyArchonId, 5)){
+                    rc.firePentadShot(ownLoc.directionTo(enemyArchon.getLocation()));
+                    return true;
                 }
-                else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3){
-                    if(rc.canFireTriadShot()){
-                        rc.fireTriadShot(rc.getLocation().directionTo(enemyArchon.location));
-                    }
+                else if(rc.senseNearbyRobots(-1, rc.getTeam().opponent()).length > 3 && canShootRobot(rc, enemyArchonId, 3)){
+                    rc.fireTriadShot(ownLoc.directionTo(enemyArchon.getLocation()));
+                    return true;
                 }
-                else if (rc.canFireSingleShot()) {
-                    rc.fireSingleShot(rc.getLocation().directionTo(enemyArchon.location));
+                else if (canShootRobot(rc,enemyArchonId, 1)) {
+                    rc.fireSingleShot(ownLoc.directionTo(enemyArchon.location));
+                    return true;
                 }
-                return true;
             }
         }
         return false;
