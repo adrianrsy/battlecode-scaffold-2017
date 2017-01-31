@@ -11,7 +11,6 @@ public strictfp class Soldier {
     
     /*
      * TODO:
-     * Use modified canShootRobot function to avoid friendly fire (attempt 5 then 3 then 1, example in tryAttackEnemyArchon code)
      * Update and clear channels for enemies, target closest enemy first. If none in range, move towards target in channel
      */
     
@@ -64,11 +63,11 @@ public strictfp class Soldier {
                 
                 if(currentTargetId > 0 && rc.canSenseRobot(currentTargetId)){
                     Direction attackDirection = ownLocation.directionTo(rc.senseRobot(currentTargetId).getLocation());
-                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot()) {                     
+                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot() && RobotPlayer.canShootRobot(rc, currentTargetId, 5)) {
                         rc.firePentadShot(attackDirection);
-                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot()) {
+                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot() && RobotPlayer.canShootRobot(rc, currentTargetId, 3)) {
                         rc.fireTriadShot(attackDirection);
-                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot()) {
+                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot() && RobotPlayer.canShootRobot(rc, currentTargetId, 1)) {
                         rc.fireSingleShot(attackDirection);
                     }
                 }
@@ -76,11 +75,13 @@ public strictfp class Soldier {
                     currentTargetId = -1;
                     int enemyArchons = 0;
                     MapLocation nearestArchonLoc = null; // sorry 005
+                    int nearestArchonId = -1;
                     for (RobotInfo robot : nearbyEnemies) {
                         if (robot.type == RobotType.ARCHON) {
                             enemyArchons++;
                             if (enemyArchons == 1) {
                                 nearestArchonLoc = robot.getLocation();
+                                nearestArchonId = robot.getID();
                             }
                             for(int i =1; i<=3; i++){
                                 int possibleArchonId = rc.readBroadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 +i);
@@ -103,26 +104,24 @@ public strictfp class Soldier {
                         headedTo = ownLocation.directionTo(nearbyEnemies[0].getLocation());
                     }
                     
-                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot()) {
+                    Direction attackDirection;
+                    int attackId = -1;
+                    if (enemyArchons > 0) {
+                        attackDirection = ownLocation.directionTo(nearestArchonLoc);
+                        attackId = nearestArchonId;
+                    } else {
+                        attackDirection = headedTo;
+                        attackId = currentTargetId;
+                    }
+                    if (nearbyEnemies.length >= 6 && rc.canFirePentadShot() && RobotPlayer.canShootRobot(rc, attackId, 5)) {
                         // shoot at the nearest enemy archon if it is within sensing radius
                         // if not, shoot at the nearest enemy
-                        if (enemyArchons > 0) {
-                            rc.firePentadShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {                        
-                            rc.firePentadShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
-                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot()) {
-                        if (enemyArchons > 0) {
-                            rc.fireTriadShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {
-                            rc.fireTriadShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
-                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot()) {
-                        if (enemyArchons > 0) {
-                            rc.fireSingleShot(ownLocation.directionTo(nearestArchonLoc));
-                        } else {
-                            rc.fireSingleShot(ownLocation.directionTo(nearbyEnemies[0].getLocation()));
-                        }
+                        rc.firePentadShot(attackDirection);
+
+                    } else if (nearbyEnemies.length >= 3 && rc.canFireTriadShot() && RobotPlayer.canShootRobot(rc, attackId, 3)) {
+                        rc.fireTriadShot(attackDirection);
+                    } else if (nearbyEnemies.length >= 1 && rc.canFireSingleShot() && RobotPlayer.canShootRobot(rc, attackId, 1)) {
+                        rc.fireSingleShot(attackDirection);
                     }
 
                     // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
