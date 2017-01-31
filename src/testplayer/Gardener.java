@@ -157,7 +157,11 @@ public strictfp class Gardener {
                 RobotPlayer.dodge(4);
                 RobotInfo[] nearbyAllyRobots = rc.senseNearbyRobots((float) 5, rc.getTeam());
                 if(nearbyAllyRobots.length > 0){
-                    headedTo = nearbyAllyRobots[0].getLocation().directionTo(ownLoc);
+                    for(RobotInfo nearbyAllyRobot: nearbyAllyRobots){
+                        if(nearbyAllyRobot.getType().equals(RobotType.ARCHON) ||nearbyAllyRobot.getType().equals(RobotType.GARDENER) )
+                            headedTo = nearbyAllyRobot.getLocation().directionTo(ownLoc);
+                            break;
+                    }
                 }
                 headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);

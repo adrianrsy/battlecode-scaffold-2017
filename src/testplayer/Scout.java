@@ -9,6 +9,11 @@ public strictfp class Scout {
         this.rc = rc;
     }
     
+    /*
+     * TODO:
+     * Fix motion, move away from archon until unable to move then switch and move the opposite direction
+     */
+    
     /**
      * A scout will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>
