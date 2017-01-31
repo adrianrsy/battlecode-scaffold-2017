@@ -35,12 +35,15 @@ public strictfp class Scout {
         int archonNum = RobotPlayer.getNearestArchon();
         Direction headedTo = RobotPlayer.getArchonDirection(archonNum).opposite();
         boolean hidingMode = false;
+        // this is local to each scout, so if the scout dies before being able to replace the archon,
+        // it will never get replaced which should be fine for now
+        int enemyArchonsToReplace = 0;
 
         while (!hidingMode) {
             try {
-                // first try to dodge any bullets
-                RobotPlayer.dodge(rc);
-                MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
+            	// first try to dodge any bullets
+            	RobotPlayer.dodge(rc);
+            	MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);
                 }
@@ -56,7 +59,8 @@ public strictfp class Scout {
                         if (rc.canSenseLocation(new MapLocation(archonX,archonY)) && !rc.canSenseRobot(enemyArchonIds[i])) {
                             rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3 + i+1, -1);
                             enemyArchonIds[i] = -1;
-                        };
+                            enemyArchonsToReplace++;
+                        }
                     }
                 }
                 
@@ -65,21 +69,26 @@ public strictfp class Scout {
                     if (rc.canFireSingleShot()) {
                         rc.fireSingleShot(rc.getLocation().directionTo(robot.location));
                     }
-                    if (robot.type == RobotType.ARCHON) {
-                        for (int i=0; i<enemyArchonIds.length; i++) {
-                            int possibleArchonId = enemyArchonIds[i];
-                            if(possibleArchonId == -1){
-                                rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+i+1, robot.getID());
-                                rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i+1, robot.getLocation().x);
+                	if (robot.type == RobotType.ARCHON || enemyArchonsToReplace > 0) {
+                	    for (int i=0; i<enemyArchonIds.length; i++) {
+                	        int possibleArchonId = enemyArchonIds[i];
+                		    if(possibleArchonId == -1){
+                		        int newId = robot.getID();
+                		        rc.broadcast(RobotPlayer.ENEMY_ARCHON_ID_CHANNEL*3+i+1, newId);
+                		        rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i+1, robot.getLocation().x);
+                                rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i+1, robot.getLocation().y);
+                                if (robot.type != RobotType.ARCHON) {
+                                    enemyArchonsToReplace--;
+                                }
+                                enemyArchonIds[i] = newId;
+                                break;
+                		    } else if(possibleArchonId == robot.getID()){
+                		        rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i+1, robot.getLocation().x);
                                 rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i+1, robot.getLocation().y);
                                 break;
-                            } else if(possibleArchonId == robot.getID()){
-                                rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_X_CHANNEL*3 + i+1, robot.getLocation().x);
-                                rc.broadcastFloat(RobotPlayer.ENEMY_ARCHON_Y_CHANNEL*3 + i+1, robot.getLocation().y);
-                                break;
-                            }
-                        }
-                    }
+                		    }
+                		}
+                	}
                 }
                 if(RobotPlayer.isDying()){
                     hidingMode = true;
@@ -102,26 +111,26 @@ public strictfp class Scout {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 RobotPlayer.dodge(4, rc);
-                MapLocation ownLocation = rc.getLocation();
-                TreeInfo treeAtLocation = rc.senseTreeAtLocation(ownLocation);
-                if (treeAtLocation != null && treeAtLocation.team == enemy) {
-                    // try to move to the center of the tree
-                    RobotPlayer.tryMove(ownLocation.directionTo(treeAtLocation.location));
-                    // See if there are any nearby enemy robots and shoot at the nearest one
+            	MapLocation ownLocation = rc.getLocation();
+            	TreeInfo treeAtLocation = rc.senseTreeAtLocation(ownLocation);
+            	if (treeAtLocation != null && treeAtLocation.team == enemy) {
+            		// try to move to the center of the tree
+            		RobotPlayer.tryMove(ownLocation.directionTo(treeAtLocation.location));
+            		// See if there are any nearby enemy robots and shoot at the nearest one
                     RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, enemy);
                     if (nearbyEnemies.length > 0 && rc.canFireSingleShot()) {
-                        rc.fireSingleShot(ownLocation.directionTo(nearbyEnemies[0].location));
+                    	rc.fireSingleShot(ownLocation.directionTo(nearbyEnemies[0].location));
                     }
-                } else {
+            	} else {
                     TreeInfo[] nearbyEnemyTrees = rc.senseNearbyTrees(-1, enemy);
                     if (nearbyEnemyTrees.length > 0) {
-                        // try to move to the nearest enemy tree
-                        RobotPlayer.tryMove(ownLocation.directionTo(nearbyEnemyTrees[0].location));
+                    	// try to move to the nearest enemy tree
+                    	RobotPlayer.tryMove(ownLocation.directionTo(nearbyEnemyTrees[0].location));
                     } else {
-                        // if can't find enemy trees, try to move back from where it came from to look
-                        RobotPlayer.tryMove(headedTo.opposite());
+                    	// if can't find enemy trees, try to move back from where it came from to look
+                    	RobotPlayer.tryMove(headedTo.opposite());
                     }
-                }
+            	}
                 
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();

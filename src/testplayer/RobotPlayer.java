@@ -4,7 +4,7 @@ import battlecode.common.*;
 /*
  * TODO:
  * Add limit for number of scouts (needs to be fixed) (not yet tested)
- * If enemy archon dies, needs to give new target for robots. (implementation only removes dead enemy archons from broadcast)
+ * If enemy archon dies, needs to give new target for robots. (done)
  * Make lumberjacks during phase 2 just to cut down gardener clumps? (not yet implemented)
  * Make gardeners move away from archon before planting tree clusters. (implemented for phase 1, doesn't seem to work very well 
  * for phase 2)
