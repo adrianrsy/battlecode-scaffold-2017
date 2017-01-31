@@ -56,7 +56,7 @@ public strictfp class Scout {
                 if (enemyArchonLocation != null) {
                     RobotPlayer.moveTowards(enemyArchonLocation, rc);
                 }
-                RobotPlayer.tryMove(RobotPlayer.randomDirection());
+                headedTo = tryMoveTowardsOpen(headedTo, RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation()), 6);
                 
                 int[] enemyArchonIds = RobotPlayer.getEnemyArchonIds();
                 // check which broadcasted enemy archon ids belong to dead archons
@@ -149,6 +149,80 @@ public strictfp class Scout {
                 e.printStackTrace();
             }
         }
+    }
+    
+    /**
+     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+     *
+     * @param dir The intended direction of movement
+     * @param degreeOffset Spacing between checked directions (degrees)
+     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    Direction tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        if(rc.hasMoved()){
+            return dir;
+        }
+        // First, try intended direction
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+            return dir;
+        }
+        // Now try a bunch of similar angles
+        int currentCheck = 1;
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            if(!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+                return dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            }
+            // Try the offset on the right side
+            if(!rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+                return dir.rotateRightDegrees(degreeOffset*currentCheck);
+            }
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+        // A move never happened, so return false.
+        return dir;
+    }
+    
+   /**
+    * Tries to move towards a final goal, but takes into account the direction it is currently heading
+    * (To avoid obstacles without turning back)
+    * @param dir The direction it is currently headed towards
+    * @param secondaryDir The final goal direction
+    * @param checks number of 
+    * @return
+    * @throws GameActionException
+    */
+    Direction tryMoveTowardsOpen(Direction dir, Direction secondaryDir, int checks) throws GameActionException {
+        if(rc.hasMoved()){
+            return dir;
+        }
+        float difRadiansPerCheck = (secondaryDir.radians - dir.radians)/ checks;
+        // First, try intended direction
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+            return dir;
+        }
+        int currentCheck = 1;
+        while(currentCheck <= checks){
+            Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
+            if(!rc.hasMoved() && rc.canMove(targetDir)) {
+                rc.move(targetDir);
+                return targetDir;
+            }
+            currentCheck++;
+        }
+        if(!rc.hasMoved()){
+            System.out.println("Cannot move thus trying a somewhat random move");
+            return tryMove(secondaryDir,150,15);
+        }
+        
+        return dir;
     }
 
 }

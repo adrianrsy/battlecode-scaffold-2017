@@ -143,8 +143,8 @@ public strictfp class Lumberjack {
                 e.printStackTrace();
             }
         }
+        hasTarget = false;
         while(turnCount >=PHASE_1_ACTIVE_TURN_LIMIT){
-            hasTarget = false;
             try {
                 System.out.println("I am a lumberjack on turn " + turnCount);
                 RobotPlayer.dodge(4); //based on max bullet speed
@@ -153,8 +153,8 @@ public strictfp class Lumberjack {
                     RobotPlayer.updateEnemyRobotLocs(archonNum);
                     TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
                     if(nearbyTrees.length == 0){
-                        RobotPlayer.tryMoveInGeneralDirection(rc.getLocation().directionTo(RobotPlayer.readTreeLocation(archonNum)));
-                        RobotPlayer.tryMoveInGeneralDirection(rc.getLocation().directionTo(RobotPlayer.readRobotLocation(archonNum)));
+                        RobotPlayer.tryMove(rc.getLocation().directionTo(RobotPlayer.readTreeLocation(archonNum)), 110, 11);
+                        RobotPlayer.tryMove(rc.getLocation().directionTo(RobotPlayer.readRobotLocation(archonNum)), 110, 11);
                     }
                     for(TreeInfo nearbyTree: nearbyTrees){
                         if(!nearbyTree.getTeam().equals(ownTeam)){

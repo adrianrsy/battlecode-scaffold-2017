@@ -222,7 +222,7 @@ public strictfp class RobotPlayer {
                 rc.broadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum, -1);
             }
             else{
-                if(rc.senseTreeAtLocation(treeLoc1).getID()!= rc.readBroadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum)){
+                if(rc.senseTreeAtLocation(treeLoc2).getID()!= rc.readBroadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum)){
                     rc.broadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum, rc.senseTreeAtLocation(treeLoc2).getID());
                 }
             }

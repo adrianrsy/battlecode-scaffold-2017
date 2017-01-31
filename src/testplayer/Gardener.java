@@ -2,6 +2,11 @@ package testplayer;
 import battlecode.common.*;
 import testplayer.RobotPlayer;
 
+/*
+ * TODO:
+ * Decrease purchase of victory points
+ */
+
 public strictfp class Gardener {
     RobotController rc;
     
@@ -152,19 +157,15 @@ public strictfp class Gardener {
         boolean isTankBuilder = false;
         boolean hasSettled = false;
         Direction plantDir = Direction.getEast();
+        int turnCounter = 0;
         while(!hasSettled && !hasBroadcastedDying){
             try{
+                System.out.println("Gardener on turn " + turnCounter);
+                turnCounter++;
                 RobotPlayer.dodge(4);
-                RobotInfo[] nearbyAllyRobots = rc.senseNearbyRobots((float) 5, rc.getTeam());
-                if(nearbyAllyRobots.length > 0){
-                    for(RobotInfo nearbyAllyRobot: nearbyAllyRobots){
-                        if(nearbyAllyRobot.getType().equals(RobotType.ARCHON) ||nearbyAllyRobot.getType().equals(RobotType.GARDENER) )
-                            headedTo = nearbyAllyRobot.getLocation().directionTo(ownLoc);
-                            break;
-                    }
-                }
-                headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
-                int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
+                archonLoc = RobotPlayer.getArchonLoc(archonNum);
+                ownLoc = rc.getLocation();
+                headedTo = tryMoveTowardsOpen(headedTo, archonLoc.directionTo(ownLoc), 6);
                 if(isTankBuilder){
                     tryBuild(RobotType.TANK,headedTo);
                 }
@@ -183,18 +184,18 @@ public strictfp class Gardener {
                     }
                     else{
                         double randomVar = Math.random();
-                        if(randomVar<0.4){
-                            tryBuild(RobotType.SOLDIER,headedTo);
+                        if(randomVar<0.5){
+                            tryBuild(RobotType.SOLDIER,headedTo.opposite());
                         }
                         else if(randomVar < 0.7){
-                            tryBuild(RobotType.LUMBERJACK, headedTo);
+                            tryBuild(RobotType.LUMBERJACK, headedTo.opposite());
                         }
                         else if(randomVar < 0.9){
-                            tryBuild(RobotType.SCOUT,headedTo);
+                            tryBuild(RobotType.SCOUT,headedTo.opposite());
                         }
                         else{
                             float pointCost = rc.getVictoryPointCost();
-                            for(int i=0; i<10; i++){
+                            for(int i=0; i<5; i++){
                                 if (rc.getTeamBullets() > pointCost){
                                     rc.donate(pointCost);
                                 }
@@ -202,6 +203,8 @@ public strictfp class Gardener {
                         }
                     }
                 }
+                
+                int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
                 System.out.println("Gardener turn count is: " + gardenerTurnCounter);
                 if(gardenerTurnCounter == 1){
                     float archonDist = rc.getLocation().distanceTo(RobotPlayer.getArchonLoc(archonNum));
@@ -211,8 +214,9 @@ public strictfp class Gardener {
                         rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum, rc.getID());
                     }
                 }
-                if(gardenerTurnCounter == 2){
+                else if(gardenerTurnCounter == 2){
                     int farthestId = rc.readBroadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum);
+                    System.out.println("Farthest id is " + farthestId);
                     if (farthestId == rc.getID()){
                         isTankBuilder = true;
                         System.out.println("I am the tank builder.");
@@ -220,9 +224,9 @@ public strictfp class Gardener {
                     else
                         isTankBuilder = false;   
                 }
-                if(gardenerTurnCounter == 0){
+                else if(gardenerTurnCounter == 0){
                     if(rc.readBroadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum) != -1){
-                        rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, -1);
+                        rc.broadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum, -1);
                         rc.broadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum, -1);
                     }
                 }
@@ -237,9 +241,9 @@ public strictfp class Gardener {
             while(true){
                 try{
                     turnCount ++;
-                    if(turnCount%10 ==0){
+                    if(turnCount%20 ==0){
                         float vcost = rc.getVictoryPointCost();
-                        for(int i=0; i<10; i++){
+                        for(int i=0; i<5; i++){
                             if(rc.getTeamBullets() > vcost){
                                 rc.donate(vcost);
                             }
@@ -265,9 +269,9 @@ public strictfp class Gardener {
             while(true){
                 try{
                     turnCount ++;
-                    if(turnCount%10 ==0){
+                    if(turnCount%20 ==0){
                         float vcost = rc.getVictoryPointCost();
-                        for(int i=0; i<10; i++){
+                        for(int i=0; i<5; i++){
                             if(rc.getTeamBullets() > vcost){
                                 rc.donate(vcost);
                             }
@@ -292,7 +296,7 @@ public strictfp class Gardener {
      * @throws GameActionException
      */
     SettleDirection canSettle(int archonNum) throws GameActionException{
-        if(rc.senseNearbyRobots((float) 5, rc.getTeam()).length > 0 || RobotPlayer.getArchonLoc(archonNum).distanceTo(rc.getLocation()) < 6.5){
+        if(rc.senseNearbyRobots((float) 6, rc.getTeam()).length > 0 || RobotPlayer.getArchonLoc(archonNum).distanceTo(rc.getLocation()) < 6.5){
             return new SettleDirection(false, RobotPlayer.randomDirection());
         }
         Direction randomDir = RobotPlayer.randomDirection();
@@ -311,7 +315,7 @@ public strictfp class Gardener {
         if(plantableTrees < 4){
             return new SettleDirection(false,randomDir);
         }
-        else if(hasSpace <2){
+        else if(hasSpace <4){
             return new SettleDirection(false,randomDir);
         }
         else{
@@ -426,7 +430,7 @@ public strictfp class Gardener {
      * @throws GameActionException
      */
     boolean tryBuild(RobotType robotType, Direction dir) throws GameActionException{
-         return tryBuild(robotType,dir,90,6);
+         return tryBuild(robotType,dir,150,15);
     }
     
     /**
@@ -454,6 +458,79 @@ public strictfp class Gardener {
         }
         return dir;
     }
-
+    
+    /**
+     * Attempts to move in a given direction, while avoiding small obstacles direction in the path.
+     *
+     * @param dir The intended direction of movement
+     * @param degreeOffset Spacing between checked directions (degrees)
+     * @param checksPerSide Number of extra directions checked on each side, if intended direction was unavailable
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    Direction tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+        if(rc.hasMoved()){
+            return dir;
+        }
+        // First, try intended direction
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+            return dir;
+        }
+        // Now try a bunch of similar angles
+        int currentCheck = 1;
+        while(currentCheck<=checksPerSide) {
+            // Try the offset of the left side
+            if(!rc.hasMoved() && rc.canMove(dir.rotateLeftDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateLeftDegrees(degreeOffset*currentCheck));
+                return dir.rotateLeftDegrees(degreeOffset*currentCheck);
+            }
+            // Try the offset on the right side
+            if(!rc.hasMoved() && rc.canMove(dir.rotateRightDegrees(degreeOffset*currentCheck))) {
+                rc.move(dir.rotateRightDegrees(degreeOffset*currentCheck));
+                return dir.rotateRightDegrees(degreeOffset*currentCheck);
+            }
+            // No move performed, try slightly further
+            currentCheck++;
+        }
+        // A move never happened, so return false.
+        return dir;
+    }
+    
+   /**
+    * Tries to move towards a final goal, but takes into account the direction it is currently heading
+    * (To avoid obstacles without turning back)
+    * @param dir The direction it is currently headed towards
+    * @param secondaryDir The final goal direction
+    * @param checks number of 
+    * @return
+    * @throws GameActionException
+    */
+    Direction tryMoveTowardsOpen(Direction dir, Direction secondaryDir, int checks) throws GameActionException {
+        if(rc.hasMoved()){
+            return dir;
+        }
+        float difRadiansPerCheck = (secondaryDir.radians - dir.radians)/ checks;
+        // First, try intended direction
+        if (!rc.hasMoved() && rc.canMove(dir)) {
+            rc.move(dir);
+            return dir;
+        }
+        int currentCheck = 1;
+        while(currentCheck <= checks){
+            Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
+            if(!rc.hasMoved() && rc.canMove(targetDir)) {
+                rc.move(targetDir);
+                return targetDir;
+            }
+            currentCheck++;
+        }
+        if(!rc.hasMoved()){
+            System.out.println("Cannot move thus trying a somewhat random move");
+            return tryMove(dir,150,15);
+        }
+        
+        return dir;
+    }
 
 }

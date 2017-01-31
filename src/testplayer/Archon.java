@@ -15,7 +15,7 @@ public strictfp class Archon {
     //Limits for active gardener production, after some number of turn gardeners may stay behind and 
     //become inactive, a.k.a plant trees and stall
     static int PHASE_1_ACTIVE_GARDENER_LIMIT = 6;
-    static int PHASE_2_ACTIVE_GARDENER_LIMIT = 10;
+    static int PHASE_2_ACTIVE_GARDENER_LIMIT = 5;
     
     //Direction variables
     static Direction NORTH = Direction.getNorth();
@@ -201,10 +201,10 @@ public strictfp class Archon {
                             rc.donate(10* victoryPointPrice);
                         }
                     }
-                currentGardenerTurn = (currentGardenerTurn + 1)%3;
+                }
+                currentGardenerTurn = (currentGardenerTurn + 1) % 3;
                 rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, currentGardenerTurn);
                 Clock.yield();
-                }
             }catch (Exception e) {
                 System.out.println("Archon Exception");
                 e.printStackTrace();
