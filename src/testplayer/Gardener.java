@@ -174,8 +174,12 @@ public strictfp class Gardener {
                         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentLivingGardeners -1);
                     }
                     else{
-                        if(Math.random()<0.6){
+                        double randomVar = Math.random();
+                        if(randomVar<0.4){
                             tryBuild(RobotType.SOLDIER,headedTo);
+                        }
+                        else if(randomVar < 0.7){
+                            tryBuild(RobotType.LUMBERJACK, headedTo);
                         }
                         else{
                             tryBuild(RobotType.SCOUT,headedTo);
