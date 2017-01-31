@@ -124,8 +124,11 @@ public strictfp class Lumberjack {
                 System.out.println("I am a lumberjack on turn " + turnCount);
                 RobotPlayer.dodge(4, rc); //based on max bullet speed
                 
+                MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation(rc);
+                if (enemyArchonLocation != null) {
+                    RobotPlayer.moveTowards(enemyArchonLocation, rc);
+                }
                 //List of trees that the lumberjack can chop/shake
-                //RobotPlayer.tryMove(RobotPlayer.getArchonDirection(archonNum), 110, 11);
                 TreeInfo[] trees = rc.senseNearbyTrees(RobotType.LUMBERJACK.bodyRadius+GameConstants.INTERACTION_DIST_FROM_EDGE);
                 if(currentTargetId < 0){
                     boolean hasShaken = false;
