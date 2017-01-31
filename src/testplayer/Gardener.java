@@ -161,7 +161,7 @@ public strictfp class Gardener {
                     tryBuild(RobotType.TANK,headedTo);
                 }
                 else{
-                    SettleDirection settle = canSettle();
+                    SettleDirection settle = canSettle(archonNum);
                     if(settle.getCanSettle()){
                         hasSettled = true;
                         plantDir = settle.getDir();
@@ -271,10 +271,14 @@ public strictfp class Gardener {
     
     /**
      * 
+     * @param archonNum 
      * @return the direction at which to start planting so at least 4 will fit
      * @throws GameActionException
      */
-    SettleDirection canSettle() throws GameActionException{
+    SettleDirection canSettle(int archonNum) throws GameActionException{
+        if(RobotPlayer.getArchonLoc(archonNum).distanceTo(rc.getLocation()) < 6.5){
+            return new SettleDirection(false, RobotPlayer.randomDirection());
+        }
         Direction randomDir = RobotPlayer.randomDirection();
         int plantableTrees = 0;
         int hasSpace = 0;
