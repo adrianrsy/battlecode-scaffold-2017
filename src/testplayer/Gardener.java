@@ -51,32 +51,35 @@ public strictfp class Gardener {
         System.out.println("I'm a gardener!");
         int turnCount = 0;
         int archonNum = RobotPlayer.getNearestArchon();
-        //Direction headedTo = RobotPlayer.getArchonDirection(archonNum);
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
             try{
-//                MapLocation archonLoc = RobotPlayer.getArchonLoc(archonNum);
-//                System.out.println("Archon is in " + archonLoc.x + " " + archonLoc.y);
-//                MapLocation ownLoc= rc.getLocation();
-//                System.out.println("This gardener is in " + ownLoc.x + " " + ownLoc.y);
-//                System.out.println("I am heading towards " + archonLoc.directionTo(ownLoc).radians);
-                
                 Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
                 phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
                 //RobotPlayer.moveTowards(headedTo, rc);
-                RobotPlayer.tryMoveInGeneralDirection(headedTo, 110, 11);
+                headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 double randomVar = Math.random();
                 if(randomVar < 0.5){
-                    tryBuild(RobotType.LUMBERJACK,headedTo);
+                    System.out.println("Try build lumberjack");
+                    boolean builtLumberjack = tryBuild(RobotType.LUMBERJACK,headedTo);
+                    System.out.println("Built Lumberjack: " + builtLumberjack);
                 }
                 else if(randomVar < 0.7){
+                    System.out.println("Try build scout");
                     int numScouts = rc.readBroadcast(RobotPlayer.LIVING_SCOUT_CHANNEL * 3 + archonNum);
                     if(numScouts < LIVING_SCOUT_LIMIT && tryBuild(RobotType.SCOUT, headedTo)){
                         rc.broadcast(RobotPlayer.LIVING_SCOUT_CHANNEL*3 + archonNum, numScouts + 1);
+                        System.out.println("Built Scout: " + true);
                     }
+                    else
+                        System.out.println("Built Scout: " + false);
                 }
                 else{
-                    tryBuild(RobotType.SOLDIER, headedTo);
+                    System.out.println("Try build soldier");
+                    if (tryBuild(RobotType.SOLDIER, headedTo))
+                        System.out.println("Built Soldier: " + true);
+                    else
+                        System.out.println("Built Soldier: " + false);
                 }
                 turnCount +=1;
                 if(phaseNum != 1) {
@@ -116,16 +119,17 @@ public strictfp class Gardener {
      * For Phase 2 <br>
      * A gardener will move away from the general direction of the archon until it finds a place where it can 
      * plant at least 4 trees and there is a two unit wide open space after at least 2 of those planned locations.<br>
-     * Every 2nd of 3 turns (maintained by a channel incremented by the archon), each of these gardeners (unsettled) will 
-     * read if they are the farthest gardener from their own archon by reading a channel where gardeners post their 
-     * distance and id from the archon, if it matches their id, they will serve as a tank builder.<br>
      * A tank builder will try to build tanks while continuing to move away from the archon.<br>
      * Once it can settle down, it becomes inactive (signalling to the living gardener channel) and it will plant trees 
      * around itself and water the one with the lowest hp.<br>
      * If it has not yet settled down, it will attempt to build scouts/soldiers in the opposite direction of the 
      * archon's location with respect to its current location.<br>
+     * 
      * Every 1st of 3 turns, if it is not yet dying, the gardeners will account which is the farthest from the archon
      * by posting a distance and its id if its distance is greater than the previous distances.<br>
+     * Every 2nd of 3 turns (maintained by a channel incremented by the archon), each of these gardeners (unsettled) will 
+     * read if they are the farthest gardener from their own archon by reading a channel where gardeners post their 
+     * distance and id from the archon, if it matches their id, they will serve as a tank builder.<br>
      * Every 3rd of 3 turns, the first gardener to read the channel will clear the channels used to share those messages.<br>
      * If it is dying at any point, it signals that it is dying by decrementing the gardener counter.<br>
      * <br>
@@ -374,6 +378,32 @@ public strictfp class Gardener {
      */
     boolean tryBuild(RobotType robotType, Direction dir) throws GameActionException{
          return tryBuild(robotType,dir,90,6);
+    }
+    
+    /**
+     * Attempts to move randomly in the general direction of dir at most degreeOffset away, trying to move
+     * numChecks times
+     * @param dir direction to attempt moving towards
+     * @param degreeOffset 
+     * @param numChecks
+     * @return the direction it ended up heading towards.
+     * @throws GameActionException 
+     */
+    Direction tryMoveInGeneralDirection(Direction dir, float degreeOffset, int numChecks) throws GameActionException{
+        if(rc.hasMoved()){
+            return dir;
+        }
+        int attempts = 0;
+        while(attempts < numChecks){
+            float multiplier = (float) (2*Math.random()) - 1;
+            Direction randomDir = dir.rotateLeftDegrees(multiplier * degreeOffset);
+            if(!rc.hasMoved() && rc.canMove(randomDir)){
+                rc.move(randomDir);
+                return randomDir;
+            }
+            attempts +=1;
+        }
+        return dir;
     }
 
 
