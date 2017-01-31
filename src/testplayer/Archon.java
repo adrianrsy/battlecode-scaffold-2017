@@ -10,7 +10,7 @@ public strictfp class Archon {
     }
     
     //Phase turn limits
-    static int PHASE_1_TURN_LIMIT = 300;
+    static int PHASE_1_TURN_LIMIT = 200;
     
     //Limits for active gardener production, after some number of turn gardeners may stay behind and 
     //become inactive, a.k.a plant trees and stall
@@ -25,7 +25,7 @@ public strictfp class Archon {
     static Direction NORTH_EAST = new Direction((float) ((NORTH.radians + EAST.radians)/2.0));
     static Direction NORTH_WEST = new Direction((float) ((NORTH.radians + WEST.radians)/2.0));
     static Direction SOUTH_EAST = new Direction((float) ((SOUTH.radians + EAST.radians)/2.0));
-    static Direction SOUTH_WEST = new Direction((float) -((NORTH.radians + EAST.radians)/2.0));
+    static Direction SOUTH_WEST = NORTH_EAST.opposite();
     
     /**
      * For Phase 1<br>

@@ -155,6 +155,10 @@ public strictfp class Gardener {
         while(!hasSettled && !hasBroadcastedDying){
             try{
                 RobotPlayer.dodge(4);
+                RobotInfo[] nearbyAllyRobots = rc.senseNearbyRobots((float) 5, rc.getTeam());
+                if(nearbyAllyRobots.length > 0){
+                    headedTo = nearbyAllyRobots[0].getLocation().directionTo(ownLoc);
+                }
                 headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
                 if(isTankBuilder){
@@ -181,8 +185,16 @@ public strictfp class Gardener {
                         else if(randomVar < 0.7){
                             tryBuild(RobotType.LUMBERJACK, headedTo);
                         }
-                        else{
+                        else if(randomVar < 0.9){
                             tryBuild(RobotType.SCOUT,headedTo);
+                        }
+                        else{
+                            float pointCost = rc.getVictoryPointCost();
+                            for(int i=0; i<10; i++){
+                                if (rc.getTeamBullets() > pointCost){
+                                    rc.donate(pointCost);
+                                }
+                            }
                         }
                     }
                 }
@@ -276,7 +288,7 @@ public strictfp class Gardener {
      * @throws GameActionException
      */
     SettleDirection canSettle(int archonNum) throws GameActionException{
-        if(RobotPlayer.getArchonLoc(archonNum).distanceTo(rc.getLocation()) < 6.5){
+        if(rc.senseNearbyRobots((float) 5, rc.getTeam()).length > 0 || RobotPlayer.getArchonLoc(archonNum).distanceTo(rc.getLocation()) < 6.5){
             return new SettleDirection(false, RobotPlayer.randomDirection());
         }
         Direction randomDir = RobotPlayer.randomDirection();
