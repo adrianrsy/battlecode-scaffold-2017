@@ -142,10 +142,7 @@ public strictfp class Archon {
                         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, numActiveGardeners + 1);
                     }
                 }
-                
                 turnCount+=1;
-                System.out.println("This is archon " + archonNum);
-                System.out.println("turnCount is" + turnCount);
                 if(turnCount > PHASE_1_TURN_LIMIT){
                     rc.broadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3 + archonNum, 2);
                     break;

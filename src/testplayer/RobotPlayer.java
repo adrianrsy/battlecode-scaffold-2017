@@ -198,6 +198,38 @@ public strictfp class RobotPlayer {
     }
     
     /**
+     * Updates the tree channels if the given locations are within sensing range.
+     * @param archonNum
+     * @throws GameActionException
+     */
+    static void clearTreeLocs(int archonNum) throws GameActionException{
+        MapLocation treeLoc1 = new MapLocation(rc.readBroadcastFloat(ENEMY_TREE_1_X_CHANNEL*3 + archonNum),
+                rc.readBroadcastFloat(ENEMY_TREE_1_Y_CHANNEL*3 + archonNum));
+        if(rc.canSenseLocation(treeLoc1)){
+            if(!rc.isLocationOccupiedByTree(treeLoc1)){
+                rc.broadcast(TREE_TARGET_CHANNEL_1 * 3 + archonNum, -1);
+            }
+            else{
+                if(rc.senseTreeAtLocation(treeLoc1).getID()!= rc.readBroadcast(TREE_TARGET_CHANNEL_1 * 3 + archonNum)){
+                    rc.broadcast(TREE_TARGET_CHANNEL_1 * 3 + archonNum, rc.senseTreeAtLocation(treeLoc1).getID());
+                }
+            }
+        }
+        MapLocation treeLoc2 = new MapLocation(rc.readBroadcastFloat(ENEMY_TREE_2_X_CHANNEL*3 + archonNum),
+                rc.readBroadcastFloat(ENEMY_TREE_2_Y_CHANNEL*3 + archonNum));
+        if(rc.canSenseLocation(treeLoc2)){
+            if(!rc.isLocationOccupiedByTree(treeLoc2)){
+                rc.broadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum, -1);
+            }
+            else{
+                if(rc.senseTreeAtLocation(treeLoc1).getID()!= rc.readBroadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum)){
+                    rc.broadcast(TREE_TARGET_CHANNEL_2 * 3 + archonNum, rc.senseTreeAtLocation(treeLoc2).getID());
+                }
+            }
+        }
+    }
+    
+    /**
      * Adds enemy robot locations to the channel
      * @param archonNum
      * @return
@@ -224,6 +256,38 @@ public strictfp class RobotPlayer {
             }
         }
         return true;
+    }
+    
+    /**
+     * Updates the robot channels if the given locations are within sensing range.
+     * @param archonNum
+     * @throws GameActionException
+     */
+    static void clearEnemyLocs(int archonNum) throws GameActionException{
+        MapLocation robotLoc1 = new MapLocation(rc.readBroadcastFloat(ENEMY_ROBOT_1_X_CHANNEL*3 + archonNum),
+                rc.readBroadcastFloat(ENEMY_ROBOT_1_Y_CHANNEL*3 + archonNum));
+        if(rc.canSenseLocation(robotLoc1)){
+            if(!rc.isLocationOccupiedByRobot(robotLoc1)){
+                rc.broadcast(ENEMY_ROBOT_CHANNEL_1 * 3 + archonNum, -1);
+            }
+            else{
+                if(rc.senseRobotAtLocation(robotLoc1).getID()!= rc.readBroadcast(ENEMY_ROBOT_CHANNEL_1  * 3 + archonNum)){
+                    rc.broadcast(ENEMY_ROBOT_CHANNEL_1 * 3 + archonNum, rc.senseRobotAtLocation(robotLoc1).getID());
+                }
+            }
+        }
+        MapLocation robotLoc2 = new MapLocation(rc.readBroadcastFloat(ENEMY_ROBOT_2_X_CHANNEL*3 + archonNum),
+                rc.readBroadcastFloat(ENEMY_ROBOT_2_Y_CHANNEL*3 + archonNum));
+        if(rc.canSenseLocation(robotLoc2)){
+            if(!rc.isLocationOccupiedByRobot(robotLoc2)){
+                rc.broadcast(ENEMY_ROBOT_CHANNEL_2 * 3 + archonNum, -1);
+            }
+            else{
+                if(rc.senseRobotAtLocation(robotLoc1).getID()!= rc.readBroadcast(ENEMY_ROBOT_CHANNEL_2  * 3 + archonNum)){
+                    rc.broadcast(ENEMY_ROBOT_CHANNEL_2 * 3 + archonNum, rc.senseRobotAtLocation(robotLoc2).getID());
+                }
+            }
+        }
     }
     
     /**
@@ -330,6 +394,16 @@ public strictfp class RobotPlayer {
             attempts +=1;
         }
         return false;
+    }
+    
+    /**
+     * Attempts to move randomly in the general direction of dir
+     * @param dir
+     * @return
+     * @throws GameActionException
+     */
+    static boolean tryMoveInGeneralDirection(Direction dir) throws GameActionException{
+        return tryMoveInGeneralDirection(dir, 110,11);
     }
     
     /**

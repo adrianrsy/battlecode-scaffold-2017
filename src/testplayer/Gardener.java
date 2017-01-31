@@ -16,7 +16,7 @@ public strictfp class Gardener {
     static int LIVING_SCOUT_LIMIT = 15;
     
     //Turns it will move away until inactive
-    static int MOVE_AWAY_TURNS = 5;
+    static int MOVE_AWAY_TURNS = 10;
     
     /**
      * For Phase 1<br>
@@ -49,22 +49,23 @@ public strictfp class Gardener {
     
     void runGardenerPhase1() throws GameActionException{
         System.out.println("I'm a gardener!");
+        MapLocation ownLoc = rc.getLocation();
         int turnCount = 0;
         int archonNum = RobotPlayer.getNearestArchon();
         int phaseNum = 1;
         while(turnCount < PHASE_1_ACTIVE_TURN_LIMIT){
             try{
-                Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
+                Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(ownLoc);
                 phaseNum = rc.readBroadcast(RobotPlayer.PHASE_NUMBER_CHANNEL*3+archonNum);
                 //RobotPlayer.moveTowards(headedTo, rc);
                 headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 double randomVar = Math.random();
-                if(randomVar < 0.5){
+                if(randomVar < 0.6){
                     System.out.println("Try build lumberjack");
                     boolean builtLumberjack = tryBuild(RobotType.LUMBERJACK,headedTo);
                     System.out.println("Built Lumberjack: " + builtLumberjack);
                 }
-                else if(randomVar < 0.7){
+                else if(randomVar < 0.75){
                     System.out.println("Try build scout");
                     int numScouts = rc.readBroadcast(RobotPlayer.LIVING_SCOUT_CHANNEL * 3 + archonNum);
                     if(numScouts < LIVING_SCOUT_LIMIT && tryBuild(RobotType.SCOUT, headedTo)){
@@ -91,14 +92,22 @@ public strictfp class Gardener {
                 e.printStackTrace();
             } 
         }
+        
         if(phaseNum == 2){
             runGardenerPhase2(archonNum);
         }
+        
         turnCount = 0;
         int currentActiveGardenerNum = rc.readBroadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3+archonNum);
         rc.broadcast(RobotPlayer.LIVING_GARDENERS_CHANNEL*3 + archonNum, currentActiveGardenerNum - 1);
         while(turnCount < MOVE_AWAY_TURNS){
-            Direction headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
+            RobotInfo[] nearbyTeamMates = rc.senseNearbyRobots(4, rc.getTeam());
+            
+            Direction headedTo;
+            if(nearbyTeamMates.length > 0)
+                headedTo = nearbyTeamMates[0].getLocation().directionTo(rc.getLocation());
+            else
+                headedTo = RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation());
             RobotPlayer.moveTowards(headedTo, rc);
             turnCount ++;
             Clock.yield();
@@ -137,16 +146,16 @@ public strictfp class Gardener {
      */
     void runGardenerPhase2(int archonNum) throws GameActionException{
         MapLocation archonLoc = RobotPlayer.getArchonLoc(archonNum);
-        Direction headedTo = rc.getLocation().directionTo(archonLoc).opposite();
+        MapLocation ownLoc = rc.getLocation();
+        Direction headedTo = archonLoc.directionTo(ownLoc);
         boolean hasBroadcastedDying = false;
         boolean isTankBuilder = false;
         boolean hasSettled = false;
         Direction plantDir = Direction.getEast();
         while(!hasSettled && !hasBroadcastedDying){
             try{
-                headedTo = rc.getLocation().directionTo(archonLoc).opposite();
                 RobotPlayer.dodge(4, rc);
-                RobotPlayer.tryMoveInGeneralDirection(headedTo.opposite(), 90, 9);
+                headedTo = tryMoveInGeneralDirection(headedTo, 110, 11);
                 int gardenerTurnCounter = rc.readBroadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum);
                 if(isTankBuilder){
                     tryBuild(RobotType.TANK,headedTo);
@@ -173,7 +182,7 @@ public strictfp class Gardener {
                         }
                     }
                 }
-                
+                System.out.println("Gardener turn count is: " + gardenerTurnCounter);
                 if(gardenerTurnCounter == 1){
                     float archonDist = rc.getLocation().distanceTo(RobotPlayer.getArchonLoc(archonNum));
                     float currentLargestDist = rc.readBroadcastFloat(RobotPlayer.GARDENER_MAX_DIST_CHANNEL*3 + archonNum);
@@ -184,8 +193,10 @@ public strictfp class Gardener {
                 }
                 if(gardenerTurnCounter == 2){
                     int farthestId = rc.readBroadcast(RobotPlayer.GARDENER_MAX_DIST_ID_CHANNEL*3 + archonNum);
-                    if (farthestId == rc.getID())
+                    if (farthestId == rc.getID()){
                         isTankBuilder = true;
+                        System.out.println("I am the tank builder.");
+                    }
                     else
                         isTankBuilder = false;   
                 }
@@ -202,8 +213,18 @@ public strictfp class Gardener {
             } 
         }
         if(hasSettled){
+            int turnCount = 0;
             while(true){
                 try{
+                    turnCount ++;
+                    if(turnCount%10 ==0){
+                        float vcost = rc.getVictoryPointCost();
+                        for(int i=0; i<10; i++){
+                            if(rc.getTeamBullets() > vcost){
+                                rc.donate(vcost);
+                            }
+                        }
+                    }
                     tryPlantHexagonal(plantDir);
                     tryWaterHexagonal();
                     Clock.yield();
@@ -216,22 +237,22 @@ public strictfp class Gardener {
         else{
             int turnCount = 0;
             while(turnCount < MOVE_AWAY_TURNS){
-                RobotPlayer.tryMoveInGeneralDirection(headedTo, 110, 11);
+                RobotPlayer.tryMoveInGeneralDirection(headedTo);
                 turnCount ++;
                 Clock.yield();
             }
             turnCount = 0;
             while(true){
-                turnCount ++;
-                if(turnCount%10 ==0){
-                    float vcost = rc.getVictoryPointCost();
-                    for(int i=0; i<10; i++){
-                        if(rc.getTeamBullets() > vcost){
-                            rc.donate(vcost);
+                try{
+                    turnCount ++;
+                    if(turnCount%10 ==0){
+                        float vcost = rc.getVictoryPointCost();
+                        for(int i=0; i<10; i++){
+                            if(rc.getTeamBullets() > vcost){
+                                rc.donate(vcost);
+                            }
                         }
                     }
-                }
-                try{
                     tryPlantHexagonal();
                     tryWaterHexagonal();
                     Clock.yield();
@@ -292,14 +313,18 @@ public strictfp class Gardener {
     
     /**
      * Tries to plant trees in a hexagonal formation around itself.
+     * @return true if a tree is planted
      * @throws GameActionException
      */
-    void tryPlantHexagonal() throws GameActionException{
+    boolean tryPlantHexagonal() throws GameActionException{
         for(int i = 0; i< 6; i++){
             Direction dir = Direction.getEast().rotateLeftDegrees(60*i);
-            if(rc.canPlantTree(dir))
+            if(rc.canPlantTree(dir)){
                 rc.plantTree(dir);
+                return true;
+            }
         }
+        return false;
     }
     
     /**
