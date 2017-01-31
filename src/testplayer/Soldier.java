@@ -9,6 +9,12 @@ public strictfp class Soldier {
         this.rc = rc;
     }
     
+    /*
+     * TODO:
+     * Use modified canShootRobot function to avoid friendly fire (attempt 5 then 3 then 1, example in tryAttackEnemyArchon code)
+     * Update and clear channels for enemies, target closest enemy first. If none in range, move towards target in channel
+     */
+    
     /**
      * A soldier will identify which archon group it belongs to via checking the three sets of archon locations and 
      * identifying which it is closest to.<br>

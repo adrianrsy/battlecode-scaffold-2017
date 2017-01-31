@@ -9,6 +9,11 @@ public strictfp class Tank {
         this.rc = rc;
     }
     
+    /*
+     * TODO:
+     * Soldier code, except more movement attempts against trees (how does body attack work?)
+     */
+    
     /**
      * TODO:
      * 

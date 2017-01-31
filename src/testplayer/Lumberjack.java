@@ -9,6 +9,13 @@ public strictfp class Lumberjack {
         this.rc = rc;
     }
     
+    /*
+     * TODO:
+     * Sense and update trees each turn on the turn marker
+     * Switch between attacking (staying in place) and non-attacking (looking for a target from the channels) modes
+     */
+    
+    
     //Active turn limit
     static int PHASE_1_ACTIVE_TURN_LIMIT = 60;
     
