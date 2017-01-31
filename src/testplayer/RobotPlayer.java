@@ -407,23 +407,23 @@ public strictfp class RobotPlayer {
     }
     
     /**
-     * Attempts to move towards a certain point while avoiding small obstacles at an angle of at most 60 degrees.
+     * Attempts to move towards a certain point while avoiding small obstacles at an angle of at most 90 degrees.
      * @param loc location it is trying to move towards
      * @return true if the robot has successfully moved towards the point
      * @throws GameActionException
      */
     static boolean moveTowards(MapLocation loc, RobotController rc) throws GameActionException{
-        return tryMove(rc.getLocation().directionTo(loc), 45, 4);
+        return tryMove(rc.getLocation().directionTo(loc), 90, 9);
     }
     
     /**
-     * Attempts to move towards a certain direction while avoiding small obstacles at an angle of at most 60 degrees.
+     * Attempts to move towards a certain direction while avoiding small obstacles at an angle of at most 90 degrees.
      * @param dir
      * @return true if the robot has successfully moved towards the point
      * @throws GameActionException
      */
     static boolean moveTowards(Direction dir, RobotController rc) throws GameActionException{
-        return tryMove(dir, 45, 4);
+        return tryMove(dir, 90, 9);
     }
     
     // Can be improved to take into account bullet speed instead of just trajectory?
