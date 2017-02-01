@@ -179,7 +179,7 @@ public strictfp class Archon {
         while(true){
             try{
                 // if we have enough bullets to donate in order to win, donate them
-                float bulletsToWin = RobotPlayer.VICTORY_POINTS_TO_WIN*rc.getVictoryPointCost();
+                float bulletsToWin = (RobotPlayer.VICTORY_POINTS_TO_WIN-rc.getTeamVictoryPoints())*rc.getVictoryPointCost();
                 if (rc.getTeamBullets() >= bulletsToWin) {
                     rc.donate(bulletsToWin);
                 }
