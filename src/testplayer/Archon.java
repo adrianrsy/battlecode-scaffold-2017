@@ -10,12 +10,12 @@ public strictfp class Archon {
     }
     
     //Phase turn limits
-    static int PHASE_1_TURN_LIMIT = 300;
+    static int PHASE_1_TURN_LIMIT = 200;
     
     //Limits for active gardener production, after some number of turn gardeners may stay behind and 
     //become inactive, a.k.a plant trees and stall
     static int PHASE_1_ACTIVE_GARDENER_LIMIT = 6;
-    static int PHASE_2_ACTIVE_GARDENER_LIMIT = 10;
+    static int PHASE_2_ACTIVE_GARDENER_LIMIT = 5;
     
     //Direction variables
     static Direction NORTH = Direction.getNorth();
@@ -25,7 +25,7 @@ public strictfp class Archon {
     static Direction NORTH_EAST = new Direction((float) ((NORTH.radians + EAST.radians)/2.0));
     static Direction NORTH_WEST = new Direction((float) ((NORTH.radians + WEST.radians)/2.0));
     static Direction SOUTH_EAST = new Direction((float) ((SOUTH.radians + EAST.radians)/2.0));
-    static Direction SOUTH_WEST = new Direction((float) ((SOUTH.radians + WEST.radians)/2.0));
+    static Direction SOUTH_WEST = NORTH_EAST.opposite();
     
     /**
      * For Phase 1<br>
@@ -93,7 +93,7 @@ public strictfp class Archon {
         Direction headedTo;
         switch(archonNum){
         case 1:
-            if(Team.B.equals(rc.getTeam())){ 
+            if(Team.A.equals(rc.getTeam())){ 
                 headedTo = SOUTH_WEST; 
                 System.out.println("I am headed south west.");
             }
@@ -201,10 +201,10 @@ public strictfp class Archon {
                             rc.donate(10* victoryPointPrice);
                         }
                     }
-                currentGardenerTurn = (currentGardenerTurn + 1)%3;
+                }
+                currentGardenerTurn = (currentGardenerTurn + 1) % 3;
                 rc.broadcast(RobotPlayer.GARDENER_TURN_COUNTER*3 + archonNum, currentGardenerTurn);
                 Clock.yield();
-                }
             }catch (Exception e) {
                 System.out.println("Archon Exception");
                 e.printStackTrace();
