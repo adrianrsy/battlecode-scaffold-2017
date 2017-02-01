@@ -517,8 +517,14 @@ public strictfp class Gardener {
             return dir;
         }
         int currentCheck = 1;
+        Direction targetDir = new Direction(dir.radians);
         while(currentCheck <= checks){
-            Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
+            if (difRadiansPerCheck > 0) {
+                targetDir = targetDir.rotateRightRads(difRadiansPerCheck);
+            } else {
+                targetDir = targetDir.rotateLeftRads(-difRadiansPerCheck);
+            }
+            //Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
             if(!rc.hasMoved() && rc.canMove(targetDir)) {
                 rc.move(targetDir);
                 return targetDir;

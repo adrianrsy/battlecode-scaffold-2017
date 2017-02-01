@@ -48,14 +48,15 @@ public strictfp class Scout {
             try {
             	// first try to dodge any bullets
             	RobotPlayer.dodge();
+            	
             	RobotPlayer.updateEnemyRobotLocs(archonNum);
             	RobotPlayer.updateTreeLocs(archonNum);
             	RobotPlayer.clearEnemyLocs(archonNum);
             	RobotPlayer.clearTreeLocs(archonNum);
             	MapLocation enemyArchonLocation = RobotPlayer.enemyArchonLocation();
-                if (enemyArchonLocation != null) {
-                    RobotPlayer.moveTowards(enemyArchonLocation, rc);
-                }
+                //if (enemyArchonLocation != null) {
+                    //RobotPlayer.moveTowards(enemyArchonLocation, rc);
+                //}
                 headedTo = tryMoveTowardsOpen(headedTo, RobotPlayer.getArchonLoc(archonNum).directionTo(rc.getLocation()), 6);
                 
                 int[] enemyArchonIds = RobotPlayer.getEnemyArchonIds();
@@ -209,8 +210,14 @@ public strictfp class Scout {
             return dir;
         }
         int currentCheck = 1;
+        Direction targetDir = new Direction(dir.radians);
         while(currentCheck <= checks){
-            Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
+            if (difRadiansPerCheck > 0) {
+                targetDir = targetDir.rotateRightRads(difRadiansPerCheck);
+            } else {
+                targetDir = targetDir.rotateLeftRads(-difRadiansPerCheck);
+            }
+            //Direction targetDir = new Direction(dir.radians + difRadiansPerCheck*currentCheck);
             if(!rc.hasMoved() && rc.canMove(targetDir)) {
                 rc.move(targetDir);
                 return targetDir;
@@ -219,7 +226,7 @@ public strictfp class Scout {
         }
         if(!rc.hasMoved()){
             System.out.println("Cannot move thus trying a somewhat random move");
-            return tryMove(secondaryDir,150,15);
+            return tryMove(dir,150,15);
         }
         
         return dir;
